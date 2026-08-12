@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description" content="CampusConnect - College Event Management System">
+
+    <title>CampusConnect | College Events</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- =========================
+         NAVBAR
+    ========================== -->
+
+    <header class="navbar">
+        <div class="container nav-inner">
+
+            <a href="#" class="brand">
+                <span class="brand-icon">CC</span>
+
+                <span class="brand-text">
+                    <strong>CampusConnect</strong>
+                    <small>College Events</small>
+                </span>
+            </a>
+
+            <nav class="nav-links">
+
+                <button class="nav-link active" data-page="home">
+                    Home
+                </button>
+
+                <button class="nav-link" data-page="events">
+                    Events
+                </button>
+
+                <button class="nav-link" data-page="my-events" id="myEventsNav" hidden>
+                    My Events
+                </button>
+
+                <button class="nav-link" data-page="admin" id="adminNav" hidden>
+                    Admin
+                </button>
+
+            </nav>
+
+            <div class="nav-actions">
+
+                <button class="btn btn-outline" id="loginNavBtn">
+                    Login
+                </button>
+
+                <button class="btn btn-primary" id="registerNavBtn">
+                    Register
+                </button>
+
+                <div class="user-menu" id="userMenu" hidden>
+
+                    <button class="user-button" id="userButton">
+                        <span id="userInitial">U</span>
+                        <span id="userNameNav">User</span>
+                        <span>⌄</span>
+                    </button>
+
+                    <div class="user-dropdown">
+
+                        <button data-page="profile">
+                            👤 Profile
+                        </button>
+
+                        <button id="logoutBtn">
+                            🚪 Logout
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <button
+                class="mobile-menu-btn"
+                id="mobileMenuBtn"
+                aria-label="Open menu"
+            >
+                ☰
+            </button>
+
+        </div>
+    </header>
+
+
+    <!-- =========================
+         MAIN
+    ========================== -->
+
+    <main>
+
+        <!-- HOME -->
+
+        <section class="page active-page" id="homePage">
+
+            <div class="hero">
+
+                <div class="container hero-grid">
+
+                    <div class="hero-content">
+
+                        <span class="eyebrow">
+                            🎓 Your Campus. Your Events. Your Community.
+                        </span>
+
+                        <h1>
+                            Discover.
+                            <span>Connect.</span>
+                            Experience.
+                        </h1>
+
+                        <p>
+                            Find college events, workshops, competitions
+                            and cultural activities — all in one place.
+                        </p>
+
+                        <div class="hero-actions">
+
+                            <button
+                                class="btn btn-primary btn-large"
+                                data-page="events"
+                            >
+                                Explore Events →
+                            </button>
+
+                            <button
+                                class="btn btn-light btn-large"
+                                id="heroRegisterBtn"
+                            >
+                                Join CampusConnect
+                            </button>
+
+                        </div>
+
+                        <div class="hero-stats">
+
+                            <div>
+                                <strong id="heroEventCount">0</strong>
+                                <span>Events</span>
+                            </div>
+
+                            <div>
+                                <strong>1000+</strong>
+                                <span>Students</span>
+                            </div>
+
+                            <div>
+                                <strong>25+</strong>
+                                <span>Activities</span>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="hero-card">
+
+                        <div class="floating-card card-one">
+
+                            <span class="floating-icon purple">
+                                🎤
+                            </span>
+
+                            <div>
+                                <strong>Cultural Fest</strong>
+                                <small>25 Aug • 4:00 PM</small>
+                            </div>
+
+                            <span class="status-dot"></span>
+
+                        </div>
+
+                        <div class="floating-card card-two">
+
+                            <span class="floating-icon blue">
+                                💻
+                            </span>
+
+                            <div>
+                                <strong>Tech Workshop</strong>
+                                <small>8 Sep • 11:00 AM</small>
+                            </div>
+
+                            <span class="status-dot"></span>
+
+                        </div>
+
+                        <div class="hero-circle">
+                            <div class="hero-circle-inner">
+                                🎓
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- FEATURED EVENTS -->
+
+            <section class="section">
+
+                <div class="container">
+
+                    <div class="section-heading">
+
+                        <div>
+                            <span class="section-label">
+                                DON'T MISS OUT
+                            </span>
+
+                            <h2>
+                                Featured Events
+                            </h2>
+                        </div>
+
+                        <button class="text-btn" data-page="events">
+                            View all events →
+                        </button>
+
+                    </div>
+
+                    <div class="event-grid" id="featuredEvents">
+
+                        <div class="loading-card">
+                            Loading events...
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- FEATURES -->
+
+            <section class="section section-muted">
+
+                <div class="container">
+
+                    <div class="section-heading centered">
+
+                        <span class="section-label">
+                            WHY CAMPUSCONNECT?
+                        </span>
+
+                        <h2>
+                            Everything your campus needs
+                        </h2>
+
+                        <p>
+                            One simple platform for discovering,
+                            managing and participating in college events.
+                        </p>
+
+                    </div>
+
+                    <div class="feature-grid">
+
+                        <article class="feature-card">
+
+                            <div class="feature-icon purple">
+                                🔎
+                            </div>
+
+                            <h3>
+                                Discover Events
+                            </h3>
+
+                            <p>
+                                Search and filter upcoming events
+                                based on your interests.
+                            </p>
+
+                        </article>
+
+                        <article class="feature-card">
+
+                            <div class="feature-icon blue">
+                                ⚡
+                            </div>
+
+                            <h3>
+                                Easy Registration
+                            </h3>
+
+                            <p>
+                                Register for events in seconds
+                                without paperwork.
+                            </p>
+
+                        </article>
+
+                        <article class="feature-card">
+
+                            <div class="feature-icon green">
+                                📊
+                            </div>
+
+                            <h3>
+                                Smart Management
+                            </h3>
+
+                            <p>
+                                Administrators can manage events,
+                                capacity and registrations.
+                            </p>
+
+                        </article>
+
+                        <article class="feature-card">
+
+                            <div class="feature-icon orange">
+                                🔐
+                            </div>
+
+                            <h3>
+                                Secure Accounts
+                            </h3>
+
+                            <p>
+                                Your account and registrations
+                                are protected by secure authentication.
+                            </p>
+
+                        </article>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- EVENTS PAGE -->
+
+        <section class="page" id="eventsPage">
+
+            <div class="container page-container">
+
+                <div class="page-header">
+
+                    <div>
+                        <span class="section-label">
+                            CAMPUS CALENDAR
+                        </span>
+
+                        <h1>
+                            Explore Events
+                        </h1>
+
+                        <p>
+                            Find something interesting happening
+                            on campus.
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="search-panel">
+
+                    <div class="search-box">
+
+                        <span>🔍</span>
+
+                        <input
+                            type="search"
+                            id="eventSearch"
+                            placeholder="Search events, venues, workshops..."
+                        >
+
+                    </div>
+
+                    <select id="categoryFilter">
+
+                        <option value="all">
+                            All Categories
+                        </option>
+
+                        <option value="Technical">
+                            Technical
+                        </option>
+
+                        <option value="Cultural">
+                            Cultural
+                        </option>
+
+                        <option value="Sports">
+                            Sports
+                        </option>
+
+                        <option value="Workshop">
+                            Workshop
+                        </option>
+
+                        <option value="Other">
+                            Other
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div class="event-grid" id="allEvents">
+
+                    <div class="loading-card">
+                        Loading events...
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- MY EVENTS -->
+
+        <section class="page" id="my-eventsPage">
+
+            <div class="container page-container">
+
+                <div class="page-header">
+
+                    <div>
+
+                        <span class="section-label">
+                            YOUR ACTIVITY
+                        </span>
+
+                        <h1>
+                            My Events
+                        </h1>
+
+                        <p>
+                            Manage the events you have registered for.
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div class="registration-list" id="myRegistrations">
+                    Loading...
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- PROFILE -->
+
+        <section class="page" id="profilePage">
+
+            <div class="container page-container narrow">
+
+                <div class="page-header">
+
+                    <div>
+
+                        <span class="section-label">
+                            ACCOUNT
+                        </span>
+
+                        <h1>
+                            My Profile
+                        </h1>
+
+                        <p>
+                            Update your personal information.
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div class="form-card">
+
+                    <form id="profileForm">
+
+                        <div class="form-row">
+
+                            <div class="form-group">
+
+                                <label for="profileName">
+                                    Full Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="profileName"
+                                    required
+                                >
+
+                            </div>
+
+                            <div class="form-group">
+
+                                <label for="profileEmail">
+                                    Email
+                                </label>
+
+                                <input
+                                    type="email"
+                                    id="profileEmail"
+                                    disabled
+                                >
+
+                            </div>
+
+                        </div>
+
+                        <div class="form-group">
+
+                            <label for="profileDepartment">
+                                Department
+                            </label>
+
+                            <input
+                                type="text"
+                                id="profileDepartment"
+                                placeholder="e.g. BCA"
+                            >
+
+                        </div>
+
+                        <hr>
+
+                        <h3>
+                            Change Password
+                        </h3>
+
+                        <p class="form-help">
+                            Leave blank if you don't want to change it.
+                        </p>
+
+                        <div class="form-group">
+
+                            <label for="profilePassword">
+                                New Password
+                            </label>
+
+                            <input
+                                type="password"
+                                id="profilePassword"
+                                minlength="8"
+                            >
+
+                        </div>
+
+                        <button
+                            class="btn btn-primary"
+                            type="submit"
+                        >
+                            Save Changes
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ADMIN -->
+
+        <section class="page" id="adminPage">
+
+            <div class="container page-container">
+
+                <div class="page-header admin-header">
+
+                    <div>
+
+                        <span class="section-label">
+                            ADMINISTRATION
+                        </span>
+
+                        <h1>
+                            Admin Dashboard
+                        </h1>
+
+                        <p>
+                            Manage campus events and registrations.
+                        </p>
+
+                    </div>
+
+                    <button
+                        class="btn btn-primary"
+                        id="addEventBtn"
+                    >
+                        + Add Event
+                    </button>
+
+                </div>
+
+
+                <div class="stats-grid">
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon purple">
+                            📅
+                        </div>
+
+                        <div>
+                            <span>Total Events</span>
+                            <strong id="statEvents">0</strong>
+                        </div>
+
+                    </div>
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon blue">
+                            👨‍🎓
+                        </div>
+
+                        <div>
+                            <span>Students</span>
+                            <strong id="statStudents">0</strong>
+                        </div>
+
+                    </div>
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon green">
+                            🎟️
+                        </div>
+
+                        <div>
+                            <span>Registrations</span>
+                            <strong id="statRegistrations">0</strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="admin-tabs">
+
+                    <button
+                        class="admin-tab active"
+                        data-admin-tab="events"
+                    >
+                        Events
+                    </button>
+
+                    <button
+                        class="admin-tab"
+                        data-admin-tab="registrations"
+                    >
+                        Registrations
+                    </button>
+
+                </div>
+
+
+                <div
+                    class="admin-panel active"
+                    id="adminEventsPanel"
+                >
+
+                    <div class="table-card">
+
+                        <div class="table-header">
+
+                            <h2>
+                                Manage Events
+                            </h2>
+
+                            <button
+                                class="btn btn-outline btn-small"
+                                id="refreshAdminEvents"
+                            >
+                                ↻ Refresh
+                            </button>
+
+                        </div>
+
+                        <div class="table-wrapper">
+
+                            <table>
+
+                                <thead>
+
+                                    <tr>
+                                        <th>Event</th>
+                                        <th>Category</th>
+                                        <th>Date</th>
+                                        <th>Capacity</th>
+                                        <th>Registered</th>
+                                        <th>Actions</th>
+                                    </tr>
+
+                                </thead>
+
+                                <tbody id="adminEventsTable"></tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="admin-panel"
+                    id="adminRegistrationsPanel"
+                >
+
+                    <div class="table-card">
+
+                        <div class="table-header">
+
+                            <div>
+
+                                <h2>
+                                    Registrations
+                                </h2>
+
+                                <p class="table-subtitle">
+                                    View and manage student registrations.
+                                </p>
+
+                            </div>
+
+                            <button
+                                class="btn btn-primary btn-small"
+                                id="exportCsvBtn"
+                            >
+                                ↓ Export CSV
+                            </button>
+
+                        </div>
+
+                        <div class="admin-search">
+
+                            <input
+                                type="search"
+                                id="registrationSearch"
+                                placeholder="Search student or event..."
+                            >
+
+                        </div>
+
+                        <div class="table-wrapper">
+
+                            <table>
+
+                                <thead>
+
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Email</th>
+                                        <th>Event</th>
+                                        <th>Department</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+
+                                </thead>
+
+                                <tbody id="registrationsTable"></tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- FOOTER -->
+
+    <footer class="footer">
+
+        <div class="container footer-grid">
+
+            <div>
+
+                <a href="#" class="brand footer-brand">
+
+                    <span class="brand-icon">
+                        CC
+                    </span>
+
+                    <span class="brand-text">
+                        <strong>CampusConnect</strong>
+                        <small>College Events</small>
+                    </span>
+
+                </a>
+
+                <p>
+                    Connecting students with experiences
+                    that matter.
+                </p>
+
+            </div>
+
+            <div>
+
+                <h4>Platform</h4>
+
+                <button data-page="home">
+                    Home
+                </button>
+
+                <button data-page="events">
+                    Events
+                </button>
+
+                <button
+                    data-page="my-events"
+                    class="student-only"
+                    hidden
+                >
+                    My Events
+                </button>
+
+            </div>
+
+            <div>
+
+                <h4>Account</h4>
+
+                <button id="footerLogin">
+                    Login
+                </button>
+
+                <button id="footerRegister">
+                    Register
+                </button>
+
+            </div>
+
+        </div>
+
+        <div class="footer-bottom">
+
+            <div class="container">
+
+                <span>
+                    © 2026 CampusConnect
+                </span>
+
+                <span>
+                    Built for college communities ❤️
+                </span>
+
+            </div>
+
+        </div>
+
+    </footer>
+
+
+    <!-- LOGIN MODAL -->
+
+    <div
+        class="modal"
+        id="loginModal"
+        aria-hidden="true"
+    >
+
+        <div class="modal-overlay"></div>
+
+        <div class="modal-box">
+
+            <button
+                class="modal-close"
+                data-close-modal
+            >
+                ×
+            </button>
+
+            <div class="modal-header">
+
+                <span class="modal-icon">
+                    🔐
+                </span>
+
+                <h2>
+                    Welcome Back
+                </h2>
+
+                <p>
+                    Login to manage your campus events.
+                </p>
+
+            </div>
+
+            <form id="loginForm">
+
+                <div class="form-group">
+
+                    <label for="loginEmail">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="loginEmail"
+                        placeholder="you@example.com"
+                        required
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="loginPassword">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="loginPassword"
+                        placeholder="Enter your password"
+                        required
+                    >
+
+                </div>
+
+                <button
+                    class="btn btn-primary btn-full"
+                    type="submit"
+                >
+                    Login
+                </button>
+
+            </form>
+
+            <p class="modal-switch">
+                Don't have an account?
+
+                <button id="switchToRegister">
+                    Create one
+                </button>
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- REGISTER MODAL -->
+
+    <div
+        class="modal"
+        id="registerModal"
+        aria-hidden="true"
+    >
+
+        <div class="modal-overlay"></div>
+
+        <div class="modal-box">
+
+            <button
+                class="modal-close"
+                data-close-modal
+            >
+                ×
+            </button>
+
+            <div class="modal-header">
+
+                <span class="modal-icon">
+                    🎓
+                </span>
+
+                <h2>
+                    Join CampusConnect
+                </h2>
+
+                <p>
+                    Create your student account.
+                </p>
+
+            </div>
+
+            <form id="registerForm">
+
+                <div class="form-group">
+
+                    <label for="registerName">
+                        Full Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="registerName"
+                        placeholder="Your full name"
+                        required
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="registerEmail">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="registerEmail"
+                        placeholder="you@example.com"
+                        required
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="registerDepartment">
+                        Department
+                    </label>
+
+                    <input
+                        type="text"
+                        id="registerDepartment"
+                        placeholder="e.g. BCA"
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="registerPassword">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="registerPassword"
+                        placeholder="Minimum 8 characters"
+                        minlength="8"
+                        required
+                    >
+
+                </div>
+
+                <button
+                    class="btn btn-primary btn-full"
+                    type="submit"
+                >
+                    Create Account
+                </button>
+
+            </form>
+
+            <p class="modal-switch">
+                Already have an account?
+
+                <button id="switchToLogin">
+                    Login
+                </button>
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- EVENT MODAL -->
+
+    <div
+        class="modal"
+        id="eventModal"
+        aria-hidden="true"
+    >
+
+        <div class="modal-overlay"></div>
+
+        <div class="modal-box modal-large">
+
+            <button
+                class="modal-close"
+                data-close-modal
+            >
+                ×
+            </button>
+
+            <div class="modal-header">
+
+                <span class="modal-icon">
+                    📅
+                </span>
+
+                <h2 id="eventModalTitle">
+                    Add Event
+                </h2>
+
+                <p>
+                    Create or update a campus event.
+                </p>
+
+            </div>
+
+            <form id="eventForm">
+
+                <input
+                    type="hidden"
+                    id="eventId"
+                >
+
+                <div class="form-row">
+
+                    <div class="form-group">
+
+                        <label for="eventTitle">
+                            Event Title *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="eventTitle"
+                            maxlength="150"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="eventCategory">
+                            Category *
+                        </label>
+
+                        <select
+                            id="eventCategory"
+                            required
+                        >
+
+                            <option value="">
+                                Select category
+                            </option>
+
+                            <option value="Technical">
+                                Technical
+                            </option>
+
+                            <option value="Cultural">
+                                Cultural
+                            </option>
+
+                            <option value="Sports">
+                                Sports
+                            </option>
+
+                            <option value="Workshop">
+                                Workshop
+                            </option>
+
+                            <option value="Other">
+                                Other
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="eventDescription">
+                        Description
+                    </label>
+
+                    <textarea
+                        id="eventDescription"
+                        rows="4"
+                        maxlength="5000"
+                    ></textarea>
+
+                </div>
+
+                <div class="form-row">
+
+                    <div class="form-group">
+
+                        <label for="eventDate">
+                            Date *
+                        </label>
+
+                        <input
+                            type="date"
+                            id="eventDate"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="eventTime">
+                            Time *
+                        </label>
+
+                        <input
+                            type="time"
+                            id="eventTime"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+                <div class="form-row">
+
+                    <div class="form-group">
+
+                        <label for="eventVenue">
+                            Venue *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="eventVenue"
+                            placeholder="e.g. Main Auditorium"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="eventCapacity">
+                            Capacity *
+                        </label>
+
+                        <input
+                            type="number"
+                            id="eventCapacity"
+                            min="1"
+                            max="100000"
+                            value="50"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="eventImage">
+                        Image URL
+                    </label>
+
+                    <input
+                        type="url"
+                        id="eventImage"
+                        placeholder="https://example.com/image.jpg"
+                    >
+
+                </div>
+
+                <div class="form-actions">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline"
+                        data-close-modal
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Save Event
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- TOAST -->
+
+    <div
+        class="toast"
+        id="toast"
+        role="status"
+    >
+
+        <span id="toastIcon">
+            ✓
+        </span>
+
+        <span id="toastMessage">
+            Done
+        </span>
+
+    </div>
+
+
+    <!-- JAVASCRIPT -->
+
+    <script src="js/app.js"></script>
+
+</body>
+</html>
