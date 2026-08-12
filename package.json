@@ -1,0 +1,23 @@
+{
+  "name": "campusconnect",
+  "version": "1.0.0",
+  "description": "College Event Management System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "college",
+    "events",
+    "event-management",
+    "campusconnect",
+    "bca"
+  ],
+  "author": "CampusConnect",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  }
+}
