@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "name": "Admin",
+    "email": "admin@campusconnect.com",
+    "password": "admin123",
+    "department": "Administration",
+    "role": "admin"
+  },
+  {
+    "id": 2,
+    "name": "Demo Student",
+    "email": "student@campusconnect.com",
+    "password": "student123",
+    "department": "BCA",
+    "role": "student"
+  }
+]
