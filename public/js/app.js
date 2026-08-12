@@ -1,13 +1,12 @@
 const API = "/api";
 
-let currentUser = JSON.parse(
-    localStorage.getItem("campusUser")
-) || null;
+let currentUser =
+    JSON.parse(localStorage.getItem("campusUser")) || null;
 
 let allEvents = [];
 
 /* =========================
-   HELPERS
+   BASIC HELPERS
 ========================= */
 
 function $(id) {
@@ -21,8 +20,14 @@ function showToast(message, type = "success") {
 
     if (!toast) return;
 
-    toastMessage.textContent = message;
-    toastIcon.textContent = type === "error" ? "✕" : "✓";
+    if (toastMessage) {
+        toastMessage.textContent = message;
+    }
+
+    if (toastIcon) {
+        toastIcon.textContent =
+            type === "error" ? "✕" : "✓";
+    }
 
     toast.classList.add("show");
 
@@ -33,11 +38,11 @@ function showToast(message, type = "success") {
 
 async function api(url, options = {}) {
     const response = await fetch(API + url, {
+        ...options,
         headers: {
             "Content-Type": "application/json",
             ...(options.headers || {})
-        },
-        ...options
+        }
     });
 
     const data = await response.json().catch(() => ({}));
@@ -49,6 +54,26 @@ async function api(url, options = {}) {
     }
 
     return data;
+}
+
+function escapeHTML(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function formatDate(date) {
+    if (!date) return "";
+
+    return new Date(date + "T00:00:00")
+        .toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+        });
 }
 
 /* =========================
@@ -66,10 +91,10 @@ function showPage(page) {
         target.classList.add("active-page");
     }
 
-    document.querySelectorAll(".nav-link").forEach(btn => {
-        btn.classList.toggle(
+    document.querySelectorAll(".nav-link").forEach(button => {
+        button.classList.toggle(
             "active",
-            btn.dataset.page === page
+            button.dataset.page === page
         );
     });
 
@@ -77,6 +102,13 @@ function showPage(page) {
         top: 0,
         behavior: "smooth"
     });
+
+    const mobileNav =
+        document.querySelector(".nav-links");
+
+    if (mobileNav) {
+        mobileNav.classList.remove("mobile-open");
+    }
 
     if (page === "events") {
         loadEvents();
@@ -86,12 +118,12 @@ function showPage(page) {
         loadMyEvents();
     }
 
-    if (page === "admin") {
-        loadAdminDashboard();
-    }
-
     if (page === "profile") {
         loadProfile();
+    }
+
+    if (page === "admin") {
+        loadAdminDashboard();
     }
 }
 
@@ -102,38 +134,63 @@ function showPage(page) {
 function updateUserUI() {
     const loggedIn = !!currentUser;
 
-    $("loginNavBtn").hidden = loggedIn;
-    $("registerNavBtn").hidden = loggedIn;
-    $("userMenu").hidden = !loggedIn;
+    const loginNavBtn = $("loginNavBtn");
+    const registerNavBtn = $("registerNavBtn");
+    const userMenu = $("userMenu");
+    const myEventsNav = $("myEventsNav");
+    const adminNav = $("adminNav");
 
-    if ($("myEventsNav")) {
-        $("myEventsNav").hidden = !loggedIn;
+    if (loginNavBtn) {
+        loginNavBtn.hidden = loggedIn;
     }
 
-    document.querySelectorAll(".student-only").forEach(el => {
-        el.hidden = !loggedIn;
+    if (registerNavBtn) {
+        registerNavBtn.hidden = loggedIn;
+    }
+
+    if (userMenu) {
+        userMenu.hidden = !loggedIn;
+    }
+
+    if (myEventsNav) {
+        myEventsNav.hidden = !loggedIn;
+    }
+
+    document.querySelectorAll(".student-only").forEach(element => {
+        element.hidden = !loggedIn;
     });
 
     if (currentUser) {
-        $("userInitial").textContent =
-            currentUser.name.charAt(0).toUpperCase();
+        const initial = $("userInitial");
+        const name = $("userNameNav");
 
-        $("userNameNav").textContent =
-            currentUser.name;
+        if (initial) {
+            initial.textContent =
+                currentUser.name
+                    ? currentUser.name
+                        .charAt(0)
+                        .toUpperCase()
+                    : "U";
+        }
 
-        if ($("adminNav")) {
-            $("adminNav").hidden =
+        if (name) {
+            name.textContent =
+                currentUser.name || "User";
+        }
+
+        if (adminNav) {
+            adminNav.hidden =
                 currentUser.role !== "admin";
         }
     } else {
-        if ($("adminNav")) {
-            $("adminNav").hidden = true;
+        if (adminNav) {
+            adminNav.hidden = true;
         }
     }
 }
 
 /* =========================
-   EVENTS
+   LOAD EVENTS
 ========================= */
 
 async function loadEvents() {
@@ -150,42 +207,66 @@ async function loadEvents() {
             $("featuredEvents")
         );
 
-        if ($("heroEventCount")) {
-            $("heroEventCount").textContent =
-                allEvents.length;
+        const count = $("heroEventCount");
+
+        if (count) {
+            count.textContent = allEvents.length;
         }
+
     } catch (error) {
         console.error(error);
 
         if ($("allEvents")) {
-            $("allEvents").innerHTML =
-                `<div class="loading-card">
+            $("allEvents").innerHTML = `
+                <div class="loading-card">
                     Unable to load events.
-                </div>`;
+                </div>
+            `;
+        }
+
+        if ($("featuredEvents")) {
+            $("featuredEvents").innerHTML = `
+                <div class="loading-card">
+                    Unable to load events.
+                </div>
+            `;
         }
     }
 }
+
+/* =========================
+   RENDER EVENTS
+========================= */
 
 function renderEvents(events, container) {
     if (!container) return;
 
     if (!events.length) {
-        container.innerHTML =
-            `<div class="loading-card">
+        container.innerHTML = `
+            <div class="loading-card">
                 No events found.
-            </div>`;
+            </div>
+        `;
+
         return;
     }
 
     container.innerHTML = events.map(event => {
-        const seatsLeft =
-            Number(event.capacity) -
+
+        const capacity =
+            Number(event.capacity || 0);
+
+        const registered =
             Number(event.registered || 0);
+
+        const seatsLeft =
+            capacity - registered;
 
         return `
             <article class="event-card">
 
                 <div class="event-card-image">
+
                     <div class="event-category">
                         ${escapeHTML(event.category)}
                     </div>
@@ -193,6 +274,7 @@ function renderEvents(events, container) {
                     <div class="event-calendar-icon">
                         📅
                     </div>
+
                 </div>
 
                 <div class="event-card-body">
@@ -208,23 +290,39 @@ function renderEvents(events, container) {
                     </p>
 
                     <div class="event-info">
-                        <span>📅 ${formatDate(event.date)}</span>
-                        <span>⏰ ${event.time}</span>
-                        <span>📍 ${escapeHTML(event.venue)}</span>
+
+                        <span>
+                            📅 ${formatDate(event.date)}
+                        </span>
+
+                        <span>
+                            ⏰ ${escapeHTML(event.time)}
+                        </span>
+
+                        <span>
+                            📍 ${escapeHTML(event.venue)}
+                        </span>
+
                     </div>
 
                     <div class="event-card-footer">
 
                         <span class="seats">
-                            ${seatsLeft > 0
-                                ? seatsLeft + " seats left"
-                                : "Event Full"}
+                            ${
+                                seatsLeft > 0
+                                    ? `${seatsLeft} seats left`
+                                    : "Event Full"
+                            }
                         </span>
 
                         <button
                             class="btn btn-primary btn-small"
-                            onclick="registerForEvent(${event.id})"
-                            ${seatsLeft <= 0 ? "disabled" : ""}
+                            data-register-event="${event.id}"
+                            ${
+                                seatsLeft <= 0
+                                    ? "disabled"
+                                    : ""
+                            }
                         >
                             Register
                         </button>
@@ -238,28 +336,8 @@ function renderEvents(events, container) {
     }).join("");
 }
 
-function formatDate(date) {
-    if (!date) return "";
-
-    return new Date(date + "T00:00:00")
-        .toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-            year: "numeric"
-        });
-}
-
-function escapeHTML(value) {
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
 /* =========================
-   SEARCH & FILTER
+   SEARCH / FILTER
 ========================= */
 
 function filterEvents() {
@@ -271,22 +349,40 @@ function filterEvents() {
     const category =
         $("categoryFilter")?.value || "all";
 
-    const filtered = allEvents.filter(event => {
+    const filtered =
+        allEvents.filter(event => {
 
-        const matchesSearch =
-            event.title.toLowerCase().includes(search) ||
-            event.category.toLowerCase().includes(search) ||
-            event.venue.toLowerCase().includes(search) ||
-            (event.description || "")
-                .toLowerCase()
-                .includes(search);
+            const title =
+                String(event.title || "")
+                    .toLowerCase();
 
-        const matchesCategory =
-            category === "all" ||
-            event.category === category;
+            const eventCategory =
+                String(event.category || "")
+                    .toLowerCase();
 
-        return matchesSearch && matchesCategory;
-    });
+            const venue =
+                String(event.venue || "")
+                    .toLowerCase();
+
+            const description =
+                String(event.description || "")
+                    .toLowerCase();
+
+            const matchesSearch =
+                title.includes(search) ||
+                eventCategory.includes(search) ||
+                venue.includes(search) ||
+                description.includes(search);
+
+            const matchesCategory =
+                category === "all" ||
+                event.category === category;
+
+            return (
+                matchesSearch &&
+                matchesCategory
+            );
+        });
 
     renderEvents(
         filtered,
@@ -295,7 +391,7 @@ function filterEvents() {
 }
 
 /* =========================
-   REGISTER FOR EVENT
+   EVENT REGISTRATION
 ========================= */
 
 async function registerForEvent(eventId) {
@@ -316,7 +412,7 @@ async function registerForEvent(eventId) {
             method: "POST",
             body: JSON.stringify({
                 userId: currentUser.id,
-                eventId: eventId
+                eventId: Number(eventId)
             })
         });
 
@@ -340,9 +436,20 @@ async function registerForEvent(eventId) {
 
 async function loadMyEvents() {
 
-    const container = $("myRegistrations");
+    const container =
+        $("myRegistrations");
 
-    if (!container || !currentUser) return;
+    if (!container) return;
+
+    if (!currentUser) {
+        container.innerHTML = `
+            <div class="loading-card">
+                Please login to view your events.
+            </div>
+        `;
+
+        return;
+    }
 
     try {
         const registrations =
@@ -350,14 +457,17 @@ async function loadMyEvents() {
 
         const myRegistrations =
             registrations.filter(
-                r => r.userId === currentUser.id
+                registration =>
+                    Number(registration.userId) ===
+                    Number(currentUser.id)
             );
 
         if (!myRegistrations.length) {
-            container.innerHTML =
-                `<div class="loading-card">
+            container.innerHTML = `
+                <div class="loading-card">
                     You haven't registered for any events yet.
-                </div>`;
+                </div>
+            `;
 
             return;
         }
@@ -367,7 +477,9 @@ async function loadMyEvents() {
 
                 const event =
                     allEvents.find(
-                        e => e.id === registration.eventId
+                        item =>
+                            Number(item.id) ===
+                            Number(registration.eventId)
                     );
 
                 if (!event) return "";
@@ -376,6 +488,7 @@ async function loadMyEvents() {
                     <div class="registration-item">
 
                         <div>
+
                             <h3>
                                 ${escapeHTML(event.title)}
                             </h3>
@@ -383,17 +496,18 @@ async function loadMyEvents() {
                             <p>
                                 📅 ${formatDate(event.date)}
                                 &nbsp; • &nbsp;
-                                ⏰ ${event.time}
+                                ⏰ ${escapeHTML(event.time)}
                             </p>
 
                             <p>
                                 📍 ${escapeHTML(event.venue)}
                             </p>
+
                         </div>
 
                         <button
                             class="btn btn-outline btn-small"
-                            onclick="cancelRegistration(${registration.id})"
+                            data-cancel-registration="${registration.id}"
                         >
                             Cancel
                         </button>
@@ -403,25 +517,32 @@ async function loadMyEvents() {
             }).join("");
 
     } catch (error) {
-        container.innerHTML =
-            `<div class="loading-card">
+        console.error(error);
+
+        container.innerHTML = `
+            <div class="loading-card">
                 Unable to load registrations.
-            </div>`;
+            </div>
+        `;
     }
 }
 
 async function cancelRegistration(id) {
 
-    if (!confirm(
-        "Are you sure you want to cancel this registration?"
-    )) {
-        return;
-    }
+    const confirmed =
+        confirm(
+            "Are you sure you want to cancel this registration?"
+        );
+
+    if (!confirmed) return;
 
     try {
-        await api(`/registrations/${id}`, {
-            method: "DELETE"
-        });
+        await api(
+            `/registrations/${id}`,
+            {
+                method: "DELETE"
+            }
+        );
 
         showToast(
             "Registration cancelled."
@@ -442,16 +563,18 @@ async function cancelRegistration(id) {
    LOGIN
 ========================= */
 
-async function login(email, password) {
+async function loginUser(email, password) {
 
     try {
-        const result = await api("/login", {
-            method: "POST",
-            body: JSON.stringify({
-                email,
-                password
-            })
-        });
+
+        const result =
+            await api("/login", {
+                method: "POST",
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
 
         currentUser = result.user;
 
@@ -461,17 +584,26 @@ async function login(email, password) {
         );
 
         updateUserUI();
+
         closeAllModals();
 
         showToast(
             `Welcome, ${currentUser.name}!`
         );
 
-        $("loginForm").reset();
+        const form = $("loginForm");
+
+        if (form) {
+            form.reset();
+        }
 
     } catch (error) {
+
+        console.error("Login error:", error);
+
         showToast(
-            error.message,
+            error.message ||
+            "Login failed.",
             "error"
         );
     }
@@ -484,10 +616,12 @@ async function login(email, password) {
 async function registerAccount(data) {
 
     try {
-        const result = await api("/register", {
-            method: "POST",
-            body: JSON.stringify(data)
-        });
+
+        const result =
+            await api("/register", {
+                method: "POST",
+                body: JSON.stringify(data)
+            });
 
         currentUser = result.user;
 
@@ -497,17 +631,29 @@ async function registerAccount(data) {
         );
 
         updateUserUI();
+
         closeAllModals();
 
         showToast(
             "Account created successfully!"
         );
 
-        $("registerForm").reset();
+        const form = $("registerForm");
+
+        if (form) {
+            form.reset();
+        }
 
     } catch (error) {
+
+        console.error(
+            "Registration error:",
+            error
+        );
+
         showToast(
-            error.message,
+            error.message ||
+            "Registration failed.",
             "error"
         );
     }
@@ -524,43 +670,48 @@ function loadProfile() {
         return;
     }
 
-    $("profileName").value =
-        currentUser.name || "";
+    if ($("profileName")) {
+        $("profileName").value =
+            currentUser.name || "";
+    }
 
-    $("profileEmail").value =
-        currentUser.email || "";
+    if ($("profileEmail")) {
+        $("profileEmail").value =
+            currentUser.email || "";
+    }
 
-    $("profileDepartment").value =
-        currentUser.department || "";
+    if ($("profileDepartment")) {
+        $("profileDepartment").value =
+            currentUser.department || "";
+    }
 }
 
-$("profileForm")?.addEventListener(
-    "submit",
-    async function(event) {
+async function saveProfile(event) {
 
-        event.preventDefault();
+    event.preventDefault();
 
-        const updatedUser = {
-            ...currentUser,
-            name: $("profileName").value,
-            department:
-                $("profileDepartment").value
-        };
-
-        currentUser = updatedUser;
-
-        localStorage.setItem(
-            "campusUser",
-            JSON.stringify(currentUser)
-        );
-
-        updateUserUI();
-
-        showToast(
-            "Profile updated successfully!"
-        );
+    if (!currentUser) {
+        openModal("loginModal");
+        return;
     }
-);
+
+    currentUser.name =
+        $("profileName").value.trim();
+
+    currentUser.department =
+        $("profileDepartment").value.trim();
+
+    localStorage.setItem(
+        "campusUser",
+        JSON.stringify(currentUser)
+    );
+
+    updateUserUI();
+
+    showToast(
+        "Profile updated successfully!"
+    );
+}
 
 /* =========================
    ADMIN DASHBOARD
@@ -578,6 +729,7 @@ async function loadAdminDashboard() {
         );
 
         showPage("home");
+
         return;
     }
 
@@ -592,18 +744,26 @@ async function loadAdminDashboard() {
         const registrations =
             await api("/registrations");
 
-        $("statEvents").textContent =
-            events.length;
+        if ($("statEvents")) {
+            $("statEvents").textContent =
+                events.length;
+        }
 
-        $("statStudents").textContent =
-            users.filter(
-                u => u.role === "student"
-            ).length;
+        if ($("statStudents")) {
+            $("statStudents").textContent =
+                users.filter(
+                    user =>
+                        user.role === "student"
+                ).length;
+        }
 
-        $("statRegistrations").textContent =
-            registrations.length;
+        if ($("statRegistrations")) {
+            $("statRegistrations").textContent =
+                registrations.length;
+        }
 
         renderAdminEvents(events);
+
         renderAdminRegistrations(
             registrations,
             users,
@@ -611,12 +771,19 @@ async function loadAdminDashboard() {
         );
 
     } catch (error) {
+
+        console.error(error);
+
         showToast(
             "Unable to load admin dashboard.",
             "error"
         );
     }
 }
+
+/* =========================
+   ADMIN EVENTS
+========================= */
 
 function renderAdminEvents(events) {
 
@@ -625,52 +792,60 @@ function renderAdminEvents(events) {
 
     if (!table) return;
 
-    table.innerHTML = events.map(event => `
-        <tr>
+    table.innerHTML =
+        events.map(event => {
 
-            <td>
-                <strong>
-                    ${escapeHTML(event.title)}
-                </strong>
-            </td>
+            return `
+                <tr>
 
-            <td>
-                ${escapeHTML(event.category)}
-            </td>
+                    <td>
+                        <strong>
+                            ${escapeHTML(event.title)}
+                        </strong>
+                    </td>
 
-            <td>
-                ${formatDate(event.date)}
-            </td>
+                    <td>
+                        ${escapeHTML(event.category)}
+                    </td>
 
-            <td>
-                ${event.capacity}
-            </td>
+                    <td>
+                        ${formatDate(event.date)}
+                    </td>
 
-            <td>
-                ${event.registered || 0}
-            </td>
+                    <td>
+                        ${event.capacity}
+                    </td>
 
-            <td>
+                    <td>
+                        ${event.registered || 0}
+                    </td>
 
-                <button
-                    class="btn btn-outline btn-small"
-                    onclick="editEvent(${event.id})"
-                >
-                    Edit
-                </button>
+                    <td>
 
-                <button
-                    class="btn btn-small"
-                    onclick="deleteEvent(${event.id})"
-                >
-                    Delete
-                </button>
+                        <button
+                            class="btn btn-outline btn-small"
+                            data-edit-event="${event.id}"
+                        >
+                            Edit
+                        </button>
 
-            </td>
+                        <button
+                            class="btn btn-small"
+                            data-delete-event="${event.id}"
+                        >
+                            Delete
+                        </button>
 
-        </tr>
-    `).join("");
+                    </td>
+
+                </tr>
+            `;
+        }).join("");
 }
+
+/* =========================
+   ADMIN REGISTRATIONS
+========================= */
 
 function renderAdminRegistrations(
     registrations,
@@ -688,15 +863,21 @@ function renderAdminRegistrations(
 
             const user =
                 users.find(
-                    u => u.id === registration.userId
+                    item =>
+                        Number(item.id) ===
+                        Number(registration.userId)
                 );
 
             const event =
                 events.find(
-                    e => e.id === registration.eventId
+                    item =>
+                        Number(item.id) ===
+                        Number(registration.eventId)
                 );
 
-            if (!user || !event) return "";
+            if (!user || !event) {
+                return "";
+            }
 
             return `
                 <tr>
@@ -720,16 +901,20 @@ function renderAdminRegistrations(
                     </td>
 
                     <td>
-                        ${registration.status}
+                        ${escapeHTML(
+                            registration.status
+                        )}
                     </td>
 
                     <td>
+
                         <button
                             class="btn btn-small"
-                            onclick="cancelRegistration(${registration.id})"
+                            data-cancel-registration="${registration.id}"
                         >
                             Cancel
                         </button>
+
                     </td>
 
                 </tr>
@@ -738,20 +923,33 @@ function renderAdminRegistrations(
 }
 
 /* =========================
-   ADMIN EVENT FORM
+   ADD EVENT
 ========================= */
 
 function openAddEvent() {
 
-    $("eventForm").reset();
+    const form =
+        $("eventForm");
 
-    $("eventId").value = "";
+    if (form) {
+        form.reset();
+    }
 
-    $("eventModalTitle").textContent =
-        "Add Event";
+    if ($("eventId")) {
+        $("eventId").value = "";
+    }
+
+    if ($("eventModalTitle")) {
+        $("eventModalTitle").textContent =
+            "Add Event";
+    }
 
     openModal("eventModal");
 }
+
+/* =========================
+   EDIT EVENT
+========================= */
 
 async function editEvent(id) {
 
@@ -790,12 +988,17 @@ async function editEvent(id) {
         openModal("eventModal");
 
     } catch (error) {
+
         showToast(
             error.message,
             "error"
         );
     }
 }
+
+/* =========================
+   SAVE EVENT
+========================= */
 
 async function saveEvent(event) {
 
@@ -805,27 +1008,43 @@ async function saveEvent(event) {
         $("eventId").value;
 
     const eventData = {
-        title: $("eventTitle").value,
-        category: $("eventCategory").value,
-        description: $("eventDescription").value,
-        date: $("eventDate").value,
-        time: $("eventTime").value,
-        venue: $("eventVenue").value,
-        capacity: Number(
-            $("eventCapacity").value
-        )
+        title:
+            $("eventTitle").value.trim(),
+
+        category:
+            $("eventCategory").value,
+
+        description:
+            $("eventDescription").value.trim(),
+
+        date:
+            $("eventDate").value,
+
+        time:
+            $("eventTime").value,
+
+        venue:
+            $("eventVenue").value.trim(),
+
+        capacity:
+            Number(
+                $("eventCapacity").value
+            )
     };
 
     try {
 
         if (id) {
 
-            await api(`/events/${id}`, {
-                method: "PUT",
-                body: JSON.stringify(
-                    eventData
-                )
-            });
+            await api(
+                `/events/${id}`,
+                {
+                    method: "PUT",
+                    body: JSON.stringify(
+                        eventData
+                    )
+                }
+            );
 
             showToast(
                 "Event updated successfully!"
@@ -833,12 +1052,15 @@ async function saveEvent(event) {
 
         } else {
 
-            await api("/events", {
-                method: "POST",
-                body: JSON.stringify(
-                    eventData
-                )
-            });
+            await api(
+                "/events",
+                {
+                    method: "POST",
+                    body: JSON.stringify(
+                        eventData
+                    )
+                }
+            );
 
             showToast(
                 "Event created successfully!"
@@ -848,7 +1070,13 @@ async function saveEvent(event) {
         closeAllModals();
 
         await loadEvents();
-        await loadAdminDashboard();
+
+        if (
+            currentUser &&
+            currentUser.role === "admin"
+        ) {
+            await loadAdminDashboard();
+        }
 
     } catch (error) {
 
@@ -859,19 +1087,24 @@ async function saveEvent(event) {
     }
 }
 
+/* =========================
+   DELETE EVENT
+========================= */
+
 async function deleteEvent(id) {
 
-    if (!confirm(
-        "Delete this event?"
-    )) {
+    if (!confirm("Delete this event?")) {
         return;
     }
 
     try {
 
-        await api(`/events/${id}`, {
-            method: "DELETE"
-        });
+        await api(
+            `/events/${id}`,
+            {
+                method: "DELETE"
+            }
+        );
 
         showToast(
             "Event deleted."
@@ -897,9 +1130,17 @@ function openModal(id) {
 
     const modal = $(id);
 
-    if (!modal) return;
+    if (!modal) {
+        console.error(
+            "Modal not found:",
+            id
+        );
+
+        return;
+    }
 
     modal.classList.add("show");
+
     modal.setAttribute(
         "aria-hidden",
         "false"
@@ -943,7 +1184,23 @@ function logout() {
 }
 
 /* =========================
-   EVENT LISTENERS
+   USER BUTTON
+========================= */
+
+function toggleUserMenu() {
+
+    const userMenu =
+        $("userMenu");
+
+    if (!userMenu) return;
+
+    userMenu.classList.toggle(
+        "open"
+    );
+}
+
+/* =========================
+   PAGE BUTTONS
 ========================= */
 
 document.addEventListener(
@@ -957,132 +1214,385 @@ document.addEventListener(
 
         if (pageButton) {
 
+            event.preventDefault();
+
             const page =
                 pageButton.dataset.page;
 
             showPage(page);
         }
+
+        const registerButton =
+            event.target.closest(
+                "[data-register-event]"
+            );
+
+        if (registerButton) {
+
+            const eventId =
+                registerButton.dataset.registerEvent;
+
+            registerForEvent(eventId);
+        }
+
+        const cancelButton =
+            event.target.closest(
+                "[data-cancel-registration]"
+            );
+
+        if (cancelButton) {
+
+            const id =
+                cancelButton.dataset
+                    .cancelRegistration;
+
+            cancelRegistration(id);
+        }
+
+        const editButton =
+            event.target.closest(
+                "[data-edit-event]"
+            );
+
+        if (editButton) {
+
+            const id =
+                editButton.dataset.editEvent;
+
+            editEvent(id);
+        }
+
+        const deleteButton =
+            event.target.closest(
+                "[data-delete-event]"
+            );
+
+        if (deleteButton) {
+
+            const id =
+                deleteButton.dataset.deleteEvent;
+
+            deleteEvent(id);
+        }
     }
 );
 
-$("loginNavBtn")?.addEventListener(
-    "click",
-    () => openModal("loginModal")
-);
+/* =========================
+   LOGIN BUTTON
+========================= */
 
-$("registerNavBtn")?.addEventListener(
-    "click",
-    () => openModal("registerModal")
-);
+if ($("loginNavBtn")) {
+    $("loginNavBtn").addEventListener(
+        "click",
+        function(event) {
 
-$("heroRegisterBtn")?.addEventListener(
-    "click",
-    () => openModal("registerModal")
-);
+            event.preventDefault();
 
-$("footerLogin")?.addEventListener(
-    "click",
-    () => openModal("loginModal")
-);
+            openModal("loginModal");
+        }
+    );
+}
 
-$("footerRegister")?.addEventListener(
-    "click",
-    () => openModal("registerModal")
-);
+/* =========================
+   REGISTER BUTTON
+========================= */
 
-$("logoutBtn")?.addEventListener(
-    "click",
-    logout
-);
+if ($("registerNavBtn")) {
+    $("registerNavBtn").addEventListener(
+        "click",
+        function(event) {
 
-$("switchToRegister")?.addEventListener(
-    "click",
-    () => {
-        closeAllModals();
-        openModal("registerModal");
-    }
-);
+            event.preventDefault();
 
-$("switchToLogin")?.addEventListener(
-    "click",
-    () => {
-        closeAllModals();
-        openModal("loginModal");
-    }
-);
+            openModal("registerModal");
+        }
+    );
+}
+
+/* =========================
+   HERO REGISTER
+========================= */
+
+if ($("heroRegisterBtn")) {
+    $("heroRegisterBtn").addEventListener(
+        "click",
+        function(event) {
+
+            event.preventDefault();
+
+            openModal("registerModal");
+        }
+    );
+}
+
+/* =========================
+   FOOTER LOGIN
+========================= */
+
+if ($("footerLogin")) {
+    $("footerLogin").addEventListener(
+        "click",
+        function(event) {
+
+            event.preventDefault();
+
+            openModal("loginModal");
+        }
+    );
+}
+
+/* =========================
+   FOOTER REGISTER
+========================= */
+
+if ($("footerRegister")) {
+    $("footerRegister").addEventListener(
+        "click",
+        function(event) {
+
+            event.preventDefault();
+
+            openModal("registerModal");
+        }
+    );
+}
+
+/* =========================
+   LOGOUT
+========================= */
+
+if ($("logoutBtn")) {
+    $("logoutBtn").addEventListener(
+        "click",
+        function(event) {
+
+            event.preventDefault();
+
+            logout();
+        }
+    );
+}
+
+/* =========================
+   SWITCH LOGIN
+========================= */
+
+if ($("switchToLogin")) {
+    $("switchToLogin").addEventListener(
+        "click",
+        function(event) {
+
+            event.preventDefault();
+
+            closeAllModals();
+
+            openModal("loginModal");
+        }
+    );
+}
+
+/* =========================
+   SWITCH REGISTER
+========================= */
+
+if ($("switchToRegister")) {
+    $("switchToRegister").addEventListener(
+        "click",
+        function(event) {
+
+            event.preventDefault();
+
+            closeAllModals();
+
+            openModal("registerModal");
+        }
+    );
+}
+
+/* =========================
+   CLOSE MODAL BUTTONS
+========================= */
 
 document
     .querySelectorAll("[data-close-modal]")
     .forEach(button => {
+
         button.addEventListener(
             "click",
-            closeAllModals
+            function(event) {
+
+                event.preventDefault();
+
+                closeAllModals();
+            }
         );
     });
+
+/* =========================
+   MODAL OVERLAY
+========================= */
 
 document
     .querySelectorAll(".modal-overlay")
     .forEach(overlay => {
+
         overlay.addEventListener(
             "click",
             closeAllModals
         );
     });
 
-$("loginForm")?.addEventListener(
-    "submit",
-    function(event) {
+/* =========================
+   LOGIN FORM
+========================= */
 
-        event.preventDefault();
+if ($("loginForm")) {
 
-        login(
-            $("loginEmail").value,
-            $("loginPassword").value
-        );
-    }
-);
+    $("loginForm").addEventListener(
+        "submit",
+        async function(event) {
 
-$("registerForm")?.addEventListener(
-    "submit",
-    function(event) {
+            event.preventDefault();
 
-        event.preventDefault();
+            const email =
+                $("loginEmail").value.trim();
 
-        registerAccount({
-            name: $("registerName").value,
-            email: $("registerEmail").value,
-            department:
-                $("registerDepartment").value,
-            password:
-                $("registerPassword").value
-        });
-    }
-);
+            const password =
+                $("loginPassword").value;
 
-$("eventForm")?.addEventListener(
-    "submit",
-    saveEvent
-);
+            if (!email || !password) {
 
-$("addEventBtn")?.addEventListener(
-    "click",
-    openAddEvent
-);
+                showToast(
+                    "Please enter email and password.",
+                    "error"
+                );
 
-$("eventSearch")?.addEventListener(
-    "input",
-    filterEvents
-);
+                return;
+            }
 
-$("categoryFilter")?.addEventListener(
-    "change",
-    filterEvents
-);
+            await loginUser(
+                email,
+                password
+            );
+        }
+    );
+}
 
-$("refreshAdminEvents")?.addEventListener(
-    "click",
-    loadAdminDashboard
-);
+/* =========================
+   REGISTER FORM
+========================= */
+
+if ($("registerForm")) {
+
+    $("registerForm").addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+            const name =
+                $("registerName").value.trim();
+
+            const email =
+                $("registerEmail").value.trim();
+
+            const department =
+                $("registerDepartment").value.trim();
+
+            const password =
+                $("registerPassword").value;
+
+            if (!name || !email || !password) {
+
+                showToast(
+                    "Please fill all required fields.",
+                    "error"
+                );
+
+                return;
+            }
+
+            await registerAccount({
+                name,
+                email,
+                department,
+                password
+            });
+        }
+    );
+}
+
+/* =========================
+   PROFILE FORM
+========================= */
+
+if ($("profileForm")) {
+
+    $("profileForm").addEventListener(
+        "submit",
+        saveProfile
+    );
+}
+
+/* =========================
+   EVENT FORM
+========================= */
+
+if ($("eventForm")) {
+
+    $("eventForm").addEventListener(
+        "submit",
+        saveEvent
+    );
+}
+
+/* =========================
+   ADD EVENT
+========================= */
+
+if ($("addEventBtn")) {
+
+    $("addEventBtn").addEventListener(
+        "click",
+        openAddEvent
+    );
+}
+
+/* =========================
+   SEARCH
+========================= */
+
+if ($("eventSearch")) {
+
+    $("eventSearch").addEventListener(
+        "input",
+        filterEvents
+    );
+}
+
+/* =========================
+   CATEGORY FILTER
+========================= */
+
+if ($("categoryFilter")) {
+
+    $("categoryFilter").addEventListener(
+        "change",
+        filterEvents
+    );
+}
+
+/* =========================
+   REFRESH ADMIN
+========================= */
+
+if ($("refreshAdminEvents")) {
+
+    $("refreshAdminEvents").addEventListener(
+        "click",
+        loadAdminDashboard
+    );
+}
 
 /* =========================
    ADMIN TABS
@@ -1098,31 +1608,43 @@ document
 
                 document
                     .querySelectorAll(".admin-tab")
-                    .forEach(t =>
-                        t.classList.remove("active")
-                    );
+                    .forEach(item => {
+                        item.classList.remove(
+                            "active"
+                        );
+                    });
 
                 document
                     .querySelectorAll(".admin-panel")
-                    .forEach(panel =>
-                        panel.classList.remove("active")
-                    );
+                    .forEach(panel => {
+                        panel.classList.remove(
+                            "active"
+                        );
+                    });
 
-                this.classList.add("active");
+                this.classList.add(
+                    "active"
+                );
 
                 const tabName =
                     this.dataset.adminTab;
 
-                if (tabName === "events") {
+                if (
+                    tabName === "events"
+                ) {
                     $("adminEventsPanel")
-                        ?.classList.add("active");
+                        ?.classList.add(
+                            "active"
+                        );
                 }
 
                 if (
                     tabName === "registrations"
                 ) {
                     $("adminRegistrationsPanel")
-                        ?.classList.add("active");
+                        ?.classList.add(
+                            "active"
+                        );
                 }
             }
         );
@@ -1132,15 +1654,25 @@ document
    MOBILE MENU
 ========================= */
 
-$("mobileMenuBtn")?.addEventListener(
-    "click",
-    function() {
+if ($("mobileMenuBtn")) {
 
-        document
-            .querySelector(".nav-links")
-            ?.classList.toggle("mobile-open");
-    }
-);
+    $("mobileMenuBtn").addEventListener(
+        "click",
+        function() {
+
+            const nav =
+                document.querySelector(
+                    ".nav-links"
+                );
+
+            if (nav) {
+                nav.classList.toggle(
+                    "mobile-open"
+                );
+            }
+        }
+    );
+}
 
 /* =========================
    INITIALIZE
@@ -1153,8 +1685,10 @@ async function init() {
     await loadEvents();
 
     if (currentUser) {
+
         console.log(
-            `Logged in as ${currentUser.name}`
+            "Logged in as:",
+            currentUser.name
         );
     }
 }
