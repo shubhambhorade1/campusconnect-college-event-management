@@ -1,188 +1,77 @@
-/* =========================================
-   CAMPUSCONNECT
-   College Event Management System
-   Frontend JavaScript
-========================================= */
-
-"use strict";
-
-/* =========================================
-   DEMO DATA
-   Backend connect hone ke baad API se replace
-========================================= */
-
-const events = [
-    {
-        id: 1,
-        title: "CodeFest 2026",
-        category: "Technical",
-        description: "A coding competition for students to test their programming skills.",
-        date: "2026-08-25",
-        time: "10:00",
-        venue: "Computer Lab",
-        capacity: 100,
-        registered: 42,
-        image: ""
-    },
-    {
-        id: 2,
-        title: "Annual Cultural Fest",
-        category: "Cultural",
-        description: "Music, dance, drama and exciting cultural performances.",
-        date: "2026-08-30",
-        time: "16:00",
-        venue: "Main Auditorium",
-        capacity: 500,
-        registered: 320,
-        image: ""
-    },
-    {
-        id: 3,
-        title: "Web Development Workshop",
-        category: "Workshop",
-        description: "Learn modern web development with HTML, CSS and JavaScript.",
-        date: "2026-09-05",
-        time: "11:00",
-        venue: "Seminar Hall",
-        capacity: 80,
-        registered: 55,
-        image: ""
-    },
-    {
-        id: 4,
-        title: "Inter College Cricket",
-        category: "Sports",
-        description: "An exciting cricket tournament between college teams.",
-        date: "2026-09-10",
-        time: "09:00",
-        venue: "College Ground",
-        capacity: 200,
-        registered: 150,
-        image: ""
-    },
-    {
-        id: 5,
-        title: "AI & Future Technology",
-        category: "Technical",
-        description: "Explore artificial intelligence and emerging technologies.",
-        date: "2026-09-15",
-        time: "12:00",
-        venue: "Innovation Lab",
-        capacity: 120,
-        registered: 78,
-        image: ""
-    },
-    {
-        id: 6,
-        title: "Photography Contest",
-        category: "Other",
-        description: "Show your creativity through photography and visual storytelling.",
-        date: "2026-09-20",
-        time: "14:00",
-        venue: "Art Gallery",
-        capacity: 60,
-        registered: 31,
-        image: ""
-    }
-];
-
-/* =========================================
-   DEMO USERS
-========================================= */
-
-let users = JSON.parse(
-    localStorage.getItem("campusconnect_users") || "[]"
-);
+const API = "/api";
 
 let currentUser = JSON.parse(
-    localStorage.getItem("campusconnect_current_user") || "null"
-);
+    localStorage.getItem("campusUser")
+) || null;
 
-let registrations = JSON.parse(
-    localStorage.getItem("campusconnect_registrations") || "[]"
-);
+let allEvents = [];
 
-/* =========================================
-   DOM HELPERS
-========================================= */
+/* =========================
+   HELPERS
+========================= */
 
-const $ = (selector) => document.querySelector(selector);
-
-const $$ = (selector) => document.querySelectorAll(selector);
-
-/* =========================================
-   INITIALIZATION
-========================================= */
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    initializeNavigation();
-
-    initializeAuth();
-
-    initializeModals();
-
-    initializeEventSearch();
-
-    initializeAdminTabs();
-
-    initializeForms();
-
-    renderFeaturedEvents();
-
-    renderAllEvents();
-
-    renderMyEvents();
-
-    renderAdminDashboard();
-
-    updateUIForUser();
-
-});
-
-/* =========================================
-   NAVIGATION
-========================================= */
-
-function initializeNavigation() {
-
-    $$("[data-page]").forEach((button) => {
-
-        button.addEventListener("click", () => {
-
-            const page = button.dataset.page;
-
-            showPage(page);
-
-        });
-
-    });
-
+function $(id) {
+    return document.getElementById(id);
 }
 
-function showPage(page) {
+function showToast(message, type = "success") {
+    const toast = $("toast");
+    const toastMessage = $("toastMessage");
+    const toastIcon = $("toastIcon");
 
-    $$(".page").forEach((section) => {
+    if (!toast) return;
+
+    toastMessage.textContent = message;
+    toastIcon.textContent = type === "error" ? "✕" : "✓";
+
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3000);
+}
+
+async function api(url, options = {}) {
+    const response = await fetch(API + url, {
+        headers: {
+            "Content-Type": "application/json",
+            ...(options.headers || {})
+        },
+        ...options
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        throw new Error(
+            data.message || "Something went wrong"
+        );
+    }
+
+    return data;
+}
+
+/* =========================
+   NAVIGATION
+========================= */
+
+function showPage(page) {
+    document.querySelectorAll(".page").forEach(section => {
         section.classList.remove("active-page");
     });
 
-    const target = $(`#${page}Page`);
+    const target = $(page + "Page");
 
-    if (!target) {
-        return;
+    if (target) {
+        target.classList.add("active-page");
     }
 
-    target.classList.add("active-page");
-
-    $$(".nav-link").forEach((link) => {
-        link.classList.remove("active");
+    document.querySelectorAll(".nav-link").forEach(btn => {
+        btn.classList.toggle(
+            "active",
+            btn.dataset.page === page
+        );
     });
-
-    const activeNav = $(`.nav-link[data-page="${page}"]`);
-
-    if (activeNav) {
-        activeNav.classList.add("active");
-    }
 
     window.scrollTo({
         top: 0,
@@ -190,637 +79,205 @@ function showPage(page) {
     });
 
     if (page === "events") {
-        renderAllEvents();
+        loadEvents();
     }
 
     if (page === "my-events") {
-        renderMyEvents();
+        loadMyEvents();
     }
 
     if (page === "admin") {
-        renderAdminDashboard();
+        loadAdminDashboard();
     }
 
+    if (page === "profile") {
+        loadProfile();
+    }
 }
 
-/* =========================================
-   AUTH UI
-========================================= */
+/* =========================
+   USER UI
+========================= */
 
-function initializeAuth() {
+function updateUserUI() {
+    const loggedIn = !!currentUser;
 
-    const loginButtons = [
-        $("#loginNavBtn"),
-        $("#footerLogin")
-    ];
+    $("loginNavBtn").hidden = loggedIn;
+    $("registerNavBtn").hidden = loggedIn;
+    $("userMenu").hidden = !loggedIn;
 
-    loginButtons.forEach((button) => {
-
-        if (button) {
-            button.addEventListener("click", () => {
-                openModal("loginModal");
-            });
-        }
-
-    });
-
-    const registerButtons = [
-        $("#registerNavBtn"),
-        $("#footerRegister"),
-        $("#heroRegisterBtn")
-    ];
-
-    registerButtons.forEach((button) => {
-
-        if (button) {
-            button.addEventListener("click", () => {
-                openModal("registerModal");
-            });
-        }
-
-    });
-
-    const logoutButton = $("#logoutBtn");
-
-    if (logoutButton) {
-
-        logoutButton.addEventListener("click", logout);
-
+    if ($("myEventsNav")) {
+        $("myEventsNav").hidden = !loggedIn;
     }
 
-}
-
-/* =========================================
-   UPDATE NAVIGATION FOR USER
-========================================= */
-
-function updateUIForUser() {
-
-    const loginButton = $("#loginNavBtn");
-
-    const registerButton = $("#registerNavBtn");
-
-    const userMenu = $("#userMenu");
-
-    const myEventsNav = $("#myEventsNav");
-
-    const adminNav = $("#adminNav");
-
-    const userName = $("#userNameNav");
-
-    const userInitial = $("#userInitial");
+    document.querySelectorAll(".student-only").forEach(el => {
+        el.hidden = !loggedIn;
+    });
 
     if (currentUser) {
+        $("userInitial").textContent =
+            currentUser.name.charAt(0).toUpperCase();
 
-        if (loginButton) {
-            loginButton.hidden = true;
+        $("userNameNav").textContent =
+            currentUser.name;
+
+        if ($("adminNav")) {
+            $("adminNav").hidden =
+                currentUser.role !== "admin";
         }
-
-        if (registerButton) {
-            registerButton.hidden = true;
-        }
-
-        if (userMenu) {
-            userMenu.hidden = false;
-        }
-
-        if (myEventsNav) {
-            myEventsNav.hidden = false;
-        }
-
-        if (userName) {
-            userName.textContent = currentUser.name;
-        }
-
-        if (userInitial) {
-            userInitial.textContent =
-                currentUser.name
-                    ? currentUser.name.charAt(0).toUpperCase()
-                    : "U";
-        }
-
-        if (currentUser.role === "admin") {
-
-            if (adminNav) {
-                adminNav.hidden = false;
-            }
-
-        }
-
     } else {
-
-        if (loginButton) {
-            loginButton.hidden = false;
+        if ($("adminNav")) {
+            $("adminNav").hidden = true;
         }
-
-        if (registerButton) {
-            registerButton.hidden = false;
-        }
-
-        if (userMenu) {
-            userMenu.hidden = true;
-        }
-
-        if (myEventsNav) {
-            myEventsNav.hidden = true;
-        }
-
-        if (adminNav) {
-            adminNav.hidden = true;
-        }
-
     }
-
 }
 
-/* =========================================
-   REGISTER
-========================================= */
+/* =========================
+   EVENTS
+========================= */
 
-function initializeForms() {
+async function loadEvents() {
+    try {
+        allEvents = await api("/events");
 
-    const registerForm = $("#registerForm");
+        renderEvents(
+            allEvents,
+            $("allEvents")
+        );
 
-    if (registerForm) {
+        renderEvents(
+            allEvents.slice(0, 3),
+            $("featuredEvents")
+        );
 
-        registerForm.addEventListener("submit", (event) => {
+        if ($("heroEventCount")) {
+            $("heroEventCount").textContent =
+                allEvents.length;
+        }
+    } catch (error) {
+        console.error(error);
 
-            event.preventDefault();
-
-            const name = $("#registerName").value.trim();
-
-            const email = $("#registerEmail").value.trim().toLowerCase();
-
-            const department =
-                $("#registerDepartment").value.trim();
-
-            const password =
-                $("#registerPassword").value;
-
-            if (password.length < 8) {
-
-                showToast(
-                    "Password must contain at least 8 characters.",
-                    "error"
-                );
-
-                return;
-            }
-
-            const existingUser = users.find(
-                (user) => user.email === email
-            );
-
-            if (existingUser) {
-
-                showToast(
-                    "An account with this email already exists.",
-                    "error"
-                );
-
-                return;
-            }
-
-            const newUser = {
-
-                id: Date.now(),
-
-                name,
-
-                email,
-
-                department,
-
-                password,
-
-                role: "student"
-
-            };
-
-            users.push(newUser);
-
-            saveUsers();
-
-            currentUser = {
-                id: newUser.id,
-                name: newUser.name,
-                email: newUser.email,
-                department: newUser.department,
-                role: newUser.role
-            };
-
-            saveCurrentUser();
-
-            closeAllModals();
-
-            updateUIForUser();
-
-            registerForm.reset();
-
-            showToast(
-                "Account created successfully!",
-                "success"
-            );
-
-        });
-
+        if ($("allEvents")) {
+            $("allEvents").innerHTML =
+                `<div class="loading-card">
+                    Unable to load events.
+                </div>`;
+        }
     }
-
-    /* =====================================
-       LOGIN
-    ===================================== */
-
-    const loginForm = $("#loginForm");
-
-    if (loginForm) {
-
-        loginForm.addEventListener("submit", (event) => {
-
-            event.preventDefault();
-
-            const email =
-                $("#loginEmail").value.trim().toLowerCase();
-
-            const password =
-                $("#loginPassword").value;
-
-            /* Demo admin account */
-
-            if (
-                email === "admin@campusconnect.com" &&
-                password === "admin123"
-            ) {
-
-                currentUser = {
-
-                    id: "admin",
-
-                    name: "Administrator",
-
-                    email,
-
-                    department: "Administration",
-
-                    role: "admin"
-
-                };
-
-                saveCurrentUser();
-
-                closeAllModals();
-
-                updateUIForUser();
-
-                loginForm.reset();
-
-                showToast(
-                    "Admin login successful!",
-                    "success"
-                );
-
-                return;
-            }
-
-            const user = users.find(
-                (item) =>
-                    item.email === email &&
-                    item.password === password
-            );
-
-            if (!user) {
-
-                showToast(
-                    "Invalid email or password.",
-                    "error"
-                );
-
-                return;
-            }
-
-            currentUser = {
-
-                id: user.id,
-
-                name: user.name,
-
-                email: user.email,
-
-                department: user.department,
-
-                role: user.role
-
-            };
-
-            saveCurrentUser();
-
-            closeAllModals();
-
-            updateUIForUser();
-
-            loginForm.reset();
-
-            showToast(
-                "Login successful!",
-                "success"
-            );
-
-        });
-
-    }
-
-    /* =====================================
-       PROFILE
-    ===================================== */
-
-    const profileForm = $("#profileForm");
-
-    if (profileForm) {
-
-        profileForm.addEventListener("submit", (event) => {
-
-            event.preventDefault();
-
-            if (!currentUser) {
-
-                showToast(
-                    "Please login first.",
-                    "error"
-                );
-
-                return;
-            }
-
-            const name =
-                $("#profileName").value.trim();
-
-            const department =
-                $("#profileDepartment").value.trim();
-
-            currentUser.name = name;
-
-            currentUser.department = department;
-
-            saveCurrentUser();
-
-            const userIndex = users.findIndex(
-                (user) => user.id === currentUser.id
-            );
-
-            if (userIndex !== -1) {
-
-                users[userIndex].name = name;
-
-                users[userIndex].department = department;
-
-                const newPassword =
-                    $("#profilePassword").value;
-
-                if (newPassword) {
-                    users[userIndex].password =
-                        newPassword;
-                }
-
-                saveUsers();
-
-            }
-
-            updateUIForUser();
-
-            showToast(
-                "Profile updated successfully!",
-                "success"
-            );
-
-        });
-
-    }
-
-    /* =====================================
-       EVENT FORM
-    ===================================== */
-
-    const eventForm = $("#eventForm");
-
-    if (eventForm) {
-
-        eventForm.addEventListener("submit", (event) => {
-
-            event.preventDefault();
-
-            if (!currentUser || currentUser.role !== "admin") {
-
-                showToast(
-                    "Admin access required.",
-                    "error"
-                );
-
-                return;
-            }
-
-            const title =
-                $("#eventTitle").value.trim();
-
-            const category =
-                $("#eventCategory").value;
-
-            const description =
-                $("#eventDescription").value.trim();
-
-            const date =
-                $("#eventDate").value;
-
-            const time =
-                $("#eventTime").value;
-
-            const venue =
-                $("#eventVenue").value.trim();
-
-            const capacity =
-                Number($("#eventCapacity").value);
-
-            const image =
-                $("#eventImage").value.trim();
-
-            const eventId =
-                $("#eventId").value;
-
-            if (eventId) {
-
-                const existing =
-                    events.find(
-                        (item) =>
-                            item.id === Number(eventId)
-                    );
-
-                if (existing) {
-
-                    existing.title = title;
-                    existing.category = category;
-                    existing.description = description;
-                    existing.date = date;
-                    existing.time = time;
-                    existing.venue = venue;
-                    existing.capacity = capacity;
-                    existing.image = image;
-
-                }
-
-                showToast(
-                    "Event updated successfully!",
-                    "success"
-                );
-
-            } else {
-
-                events.push({
-
-                    id: Date.now(),
-
-                    title,
-
-                    category,
-
-                    description,
-
-                    date,
-
-                    time,
-
-                    venue,
-
-                    capacity,
-
-                    registered: 0,
-
-                    image
-
-                });
-
-                showToast(
-                    "Event created successfully!",
-                    "success"
-                );
-
-            }
-
-            closeModal("eventModal");
-
-            eventForm.reset();
-
-            $("#eventId").value = "";
-
-            renderFeaturedEvents();
-
-            renderAllEvents();
-
-            renderAdminDashboard();
-
-        });
-
-    }
-
 }
 
-/* =========================================
-   SAVE DATA
-========================================= */
+function renderEvents(events, container) {
+    if (!container) return;
 
-function saveUsers() {
-
-    localStorage.setItem(
-        "campusconnect_users",
-        JSON.stringify(users)
-    );
-
-}
-
-function saveCurrentUser() {
-
-    localStorage.setItem(
-        "campusconnect_current_user",
-        JSON.stringify(currentUser)
-    );
-
-}
-
-/* =========================================
-   LOGOUT
-========================================= */
-
-function logout() {
-
-    currentUser = null;
-
-    localStorage.removeItem(
-        "campusconnect_current_user"
-    );
-
-    updateUIForUser();
-
-    showPage("home");
-
-    showToast(
-        "Logged out successfully.",
-        "success"
-    );
-
-}
-
-/* =========================================
-   EVENTS RENDERING
-========================================= */
-
-function renderFeaturedEvents() {
-
-    const container = $("#featuredEvents");
-
-    if (!container) {
+    if (!events.length) {
+        container.innerHTML =
+            `<div class="loading-card">
+                No events found.
+            </div>`;
         return;
     }
 
-    const featured = events.slice(0, 3);
+    container.innerHTML = events.map(event => {
+        const seatsLeft =
+            Number(event.capacity) -
+            Number(event.registered || 0);
 
-    container.innerHTML = featured
-        .map(createEventCard)
-        .join("");
+        return `
+            <article class="event-card">
 
-    updateHeroEventCount();
+                <div class="event-card-image">
+                    <div class="event-category">
+                        ${escapeHTML(event.category)}
+                    </div>
 
+                    <div class="event-calendar-icon">
+                        📅
+                    </div>
+                </div>
+
+                <div class="event-card-body">
+
+                    <h3>
+                        ${escapeHTML(event.title)}
+                    </h3>
+
+                    <p>
+                        ${escapeHTML(
+                            event.description || ""
+                        )}
+                    </p>
+
+                    <div class="event-info">
+                        <span>📅 ${formatDate(event.date)}</span>
+                        <span>⏰ ${event.time}</span>
+                        <span>📍 ${escapeHTML(event.venue)}</span>
+                    </div>
+
+                    <div class="event-card-footer">
+
+                        <span class="seats">
+                            ${seatsLeft > 0
+                                ? seatsLeft + " seats left"
+                                : "Event Full"}
+                        </span>
+
+                        <button
+                            class="btn btn-primary btn-small"
+                            onclick="registerForEvent(${event.id})"
+                            ${seatsLeft <= 0 ? "disabled" : ""}
+                        >
+                            Register
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </article>
+        `;
+    }).join("");
 }
 
-function renderAllEvents() {
+function formatDate(date) {
+    if (!date) return "";
 
-    const container = $("#allEvents");
+    return new Date(date + "T00:00:00")
+        .toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+        });
+}
 
-    if (!container) {
-        return;
-    }
+function escapeHTML(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
+/* =========================
+   SEARCH & FILTER
+========================= */
+
+function filterEvents() {
     const search =
-        ($("#eventSearch")?.value || "")
+        ($("eventSearch")?.value || "")
             .toLowerCase()
             .trim();
 
     const category =
-        $("#categoryFilter")?.value || "all";
+        $("categoryFilter")?.value || "all";
 
-    const filtered = events.filter((event) => {
+    const filtered = allEvents.filter(event => {
 
         const matchesSearch =
-
-            event.title
-                .toLowerCase()
-                .includes(search)
-
-            ||
-
-            event.description
-                .toLowerCase()
-                .includes(search)
-
-            ||
-
-            event.venue
+            event.title.toLowerCase().includes(search) ||
+            event.category.toLowerCase().includes(search) ||
+            event.venue.toLowerCase().includes(search) ||
+            (event.description || "")
                 .toLowerCase()
                 .includes(search);
 
@@ -829,648 +286,419 @@ function renderAllEvents() {
             event.category === category;
 
         return matchesSearch && matchesCategory;
-
     });
 
-    if (filtered.length === 0) {
-
-        container.innerHTML = `
-            <div class="empty-card">
-                No events found.
-            </div>
-        `;
-
-        return;
-    }
-
-    container.innerHTML =
-        filtered.map(createEventCard).join("");
-
+    renderEvents(
+        filtered,
+        $("allEvents")
+    );
 }
 
-function createEventCard(event) {
-
-    const remaining =
-        Math.max(
-            event.capacity - event.registered,
-            0
-        );
-
-    let imageContent = "🎓";
-
-    if (event.image) {
-
-        imageContent = `
-            <img
-                src="${escapeHTML(event.image)}"
-                alt="${escapeHTML(event.title)}"
-                onerror="this.style.display='none'"
-            >
-        `;
-
-    }
-
-    return `
-
-        <article class="event-card">
-
-            <div class="event-image">
-                ${imageContent}
-            </div>
-
-            <div class="event-content">
-
-                <span class="event-category">
-                    ${escapeHTML(event.category)}
-                </span>
-
-                <h3>
-                    ${escapeHTML(event.title)}
-                </h3>
-
-                <p class="event-description">
-                    ${escapeHTML(event.description)}
-                </p>
-
-                <div class="event-meta">
-
-                    <span>
-                        📅 ${formatDate(event.date)}
-                    </span>
-
-                    <span>
-                        🕐 ${formatTime(event.time)}
-                    </span>
-
-                    <span>
-                        📍 ${escapeHTML(event.venue)}
-                    </span>
-
-                </div>
-
-                <div class="event-footer">
-
-                    <span class="event-capacity">
-                        ${remaining} seats left
-                    </span>
-
-                    <button
-                        class="btn btn-primary btn-small"
-                        onclick="registerForEvent(${event.id})"
-                    >
-                        Register
-                    </button>
-
-                </div>
-
-            </div>
-
-        </article>
-
-    `;
-
-}
-
-/* =========================================
+/* =========================
    REGISTER FOR EVENT
-========================================= */
+========================= */
 
-function registerForEvent(eventId) {
+async function registerForEvent(eventId) {
 
     if (!currentUser) {
-
         openModal("loginModal");
 
         showToast(
-            "Please login to register.",
+            "Please login before registering.",
             "error"
         );
 
         return;
     }
 
-    if (currentUser.role === "admin") {
+    try {
+        await api("/registrations", {
+            method: "POST",
+            body: JSON.stringify({
+                userId: currentUser.id,
+                eventId: eventId
+            })
+        });
 
         showToast(
-            "Admin accounts cannot register for events.",
-            "error"
+            "Successfully registered!"
         );
 
-        return;
-    }
+        await loadEvents();
 
-    const event =
-        events.find(
-            (item) => item.id === eventId
-        );
-
-    if (!event) {
-        return;
-    }
-
-    if (event.registered >= event.capacity) {
-
+    } catch (error) {
         showToast(
-            "This event is already full.",
+            error.message,
             "error"
         );
-
-        return;
     }
-
-    const alreadyRegistered =
-        registrations.some(
-            (registration) =>
-                registration.userId === currentUser.id &&
-                registration.eventId === eventId
-        );
-
-    if (alreadyRegistered) {
-
-        showToast(
-            "You are already registered.",
-            "error"
-        );
-
-        return;
-    }
-
-    registrations.push({
-
-        id: Date.now(),
-
-        userId: currentUser.id,
-
-        eventId,
-
-        status: "Confirmed",
-
-        createdAt: new Date().toISOString()
-
-    });
-
-    event.registered++;
-
-    saveRegistrations();
-
-    renderAllEvents();
-
-    renderFeaturedEvents();
-
-    renderMyEvents();
-
-    renderAdminDashboard();
-
-    showToast(
-        "Event registration successful!",
-        "success"
-    );
-
 }
 
-/* =========================================
+/* =========================
    MY EVENTS
-========================================= */
+========================= */
 
-function renderMyEvents() {
+async function loadMyEvents() {
 
-    const container = $("#myRegistrations");
+    const container = $("myRegistrations");
 
-    if (!container) {
-        return;
-    }
+    if (!container || !currentUser) return;
 
-    if (!currentUser) {
+    try {
+        const registrations =
+            await api("/registrations");
 
-        container.innerHTML = `
-            <div class="empty-card">
-                Please login to see your registered events.
-            </div>
-        `;
+        const myRegistrations =
+            registrations.filter(
+                r => r.userId === currentUser.id
+            );
 
-        return;
-    }
+        if (!myRegistrations.length) {
+            container.innerHTML =
+                `<div class="loading-card">
+                    You haven't registered for any events yet.
+                </div>`;
 
-    const myRegistrations =
-        registrations.filter(
-            (registration) =>
-                registration.userId === currentUser.id
-        );
+            return;
+        }
 
-    if (myRegistrations.length === 0) {
+        container.innerHTML =
+            myRegistrations.map(registration => {
 
-        container.innerHTML = `
-            <div class="empty-card">
-                You haven't registered for any events yet.
-            </div>
-        `;
+                const event =
+                    allEvents.find(
+                        e => e.id === registration.eventId
+                    );
 
-        return;
-    }
+                if (!event) return "";
 
-    container.innerHTML =
-        myRegistrations.map((registration) => {
+                return `
+                    <div class="registration-item">
 
-            const event =
-                events.find(
-                    (item) =>
-                        item.id === registration.eventId
-                );
+                        <div>
+                            <h3>
+                                ${escapeHTML(event.title)}
+                            </h3>
 
-            if (!event) {
-                return "";
-            }
+                            <p>
+                                📅 ${formatDate(event.date)}
+                                &nbsp; • &nbsp;
+                                ⏰ ${event.time}
+                            </p>
 
-            return `
-
-                <div class="registration-card">
-
-                    <div>
-
-                        <h3>
-                            ${escapeHTML(event.title)}
-                        </h3>
-
-                        <p>
-                            📅 ${formatDate(event.date)}
-                            •
-                            🕐 ${formatTime(event.time)}
-                        </p>
-
-                        <p>
-                            📍 ${escapeHTML(event.venue)}
-                        </p>
-
-                    </div>
-
-                    <button
-                        class="btn btn-outline btn-small"
-                        onclick="cancelRegistration(${registration.id})"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            `;
-
-        }).join("");
-
-}
-
-/* =========================================
-   CANCEL REGISTRATION
-========================================= */
-
-function cancelRegistration(registrationId) {
-
-    const index =
-        registrations.findIndex(
-            (registration) =>
-                registration.id === registrationId
-        );
-
-    if (index === -1) {
-        return;
-    }
-
-    const registration =
-        registrations[index];
-
-    const event =
-        events.find(
-            (item) =>
-                item.id === registration.eventId
-        );
-
-    if (event && event.registered > 0) {
-        event.registered--;
-    }
-
-    registrations.splice(index, 1);
-
-    saveRegistrations();
-
-    renderMyEvents();
-
-    renderAllEvents();
-
-    renderFeaturedEvents();
-
-    renderAdminDashboard();
-
-    showToast(
-        "Registration cancelled.",
-        "success"
-    );
-
-}
-
-/* =========================================
-   SEARCH & FILTER
-========================================= */
-
-function initializeEventSearch() {
-
-    const search = $("#eventSearch");
-
-    const category = $("#categoryFilter");
-
-    if (search) {
-
-        search.addEventListener(
-            "input",
-            renderAllEvents
-        );
-
-    }
-
-    if (category) {
-
-        category.addEventListener(
-            "change",
-            renderAllEvents
-        );
-
-    }
-
-}
-
-/* =========================================
-   ADMIN DASHBOARD
-========================================= */
-
-function renderAdminDashboard() {
-
-    const statEvents = $("#statEvents");
-
-    const statStudents = $("#statStudents");
-
-    const statRegistrations =
-        $("#statRegistrations");
-
-    if (statEvents) {
-        statEvents.textContent =
-            events.length;
-    }
-
-    if (statStudents) {
-        statStudents.textContent =
-            users.length;
-    }
-
-    if (statRegistrations) {
-        statRegistrations.textContent =
-            registrations.length;
-    }
-
-    renderAdminEventsTable();
-
-    renderRegistrationsTable();
-
-}
-
-function renderAdminEventsTable() {
-
-    const table =
-        $("#adminEventsTable");
-
-    if (!table) {
-        return;
-    }
-
-    if (events.length === 0) {
-
-        table.innerHTML = `
-            <tr>
-                <td colspan="6">
-                    No events available.
-                </td>
-            </tr>
-        `;
-
-        return;
-    }
-
-    table.innerHTML =
-        events.map((event) => {
-
-            return `
-
-                <tr>
-
-                    <td>
-                        <strong>
-                            ${escapeHTML(event.title)}
-                        </strong>
-                    </td>
-
-                    <td>
-                        ${escapeHTML(event.category)}
-                    </td>
-
-                    <td>
-                        ${formatDate(event.date)}
-                    </td>
-
-                    <td>
-                        ${event.capacity}
-                    </td>
-
-                    <td>
-                        ${event.registered}
-                    </td>
-
-                    <td>
+                            <p>
+                                📍 ${escapeHTML(event.venue)}
+                            </p>
+                        </div>
 
                         <button
                             class="btn btn-outline btn-small"
-                            onclick="editEvent(${event.id})"
+                            onclick="cancelRegistration(${registration.id})"
                         >
-                            Edit
+                            Cancel
                         </button>
 
-                        <button
-                            class="btn btn-small"
-                            style="background:#ffe8e8;color:#d33"
-                            onclick="deleteEvent(${event.id})"
-                        >
-                            Delete
-                        </button>
+                    </div>
+                `;
+            }).join("");
 
-                    </td>
-
-                </tr>
-
-            `;
-
-        }).join("");
-
+    } catch (error) {
+        container.innerHTML =
+            `<div class="loading-card">
+                Unable to load registrations.
+            </div>`;
+    }
 }
 
-/* =========================================
-   EDIT EVENT
-========================================= */
+async function cancelRegistration(id) {
 
-function editEvent(eventId) {
+    if (!confirm(
+        "Are you sure you want to cancel this registration?"
+    )) {
+        return;
+    }
 
-    if (!currentUser || currentUser.role !== "admin") {
+    try {
+        await api(`/registrations/${id}`, {
+            method: "DELETE"
+        });
 
+        showToast(
+            "Registration cancelled."
+        );
+
+        await loadEvents();
+        await loadMyEvents();
+
+    } catch (error) {
+        showToast(
+            error.message,
+            "error"
+        );
+    }
+}
+
+/* =========================
+   LOGIN
+========================= */
+
+async function login(email, password) {
+
+    try {
+        const result = await api("/login", {
+            method: "POST",
+            body: JSON.stringify({
+                email,
+                password
+            })
+        });
+
+        currentUser = result.user;
+
+        localStorage.setItem(
+            "campusUser",
+            JSON.stringify(currentUser)
+        );
+
+        updateUserUI();
+        closeAllModals();
+
+        showToast(
+            `Welcome, ${currentUser.name}!`
+        );
+
+        $("loginForm").reset();
+
+    } catch (error) {
+        showToast(
+            error.message,
+            "error"
+        );
+    }
+}
+
+/* =========================
+   REGISTER ACCOUNT
+========================= */
+
+async function registerAccount(data) {
+
+    try {
+        const result = await api("/register", {
+            method: "POST",
+            body: JSON.stringify(data)
+        });
+
+        currentUser = result.user;
+
+        localStorage.setItem(
+            "campusUser",
+            JSON.stringify(currentUser)
+        );
+
+        updateUserUI();
+        closeAllModals();
+
+        showToast(
+            "Account created successfully!"
+        );
+
+        $("registerForm").reset();
+
+    } catch (error) {
+        showToast(
+            error.message,
+            "error"
+        );
+    }
+}
+
+/* =========================
+   PROFILE
+========================= */
+
+function loadProfile() {
+
+    if (!currentUser) {
+        openModal("loginModal");
+        return;
+    }
+
+    $("profileName").value =
+        currentUser.name || "";
+
+    $("profileEmail").value =
+        currentUser.email || "";
+
+    $("profileDepartment").value =
+        currentUser.department || "";
+}
+
+$("profileForm")?.addEventListener(
+    "submit",
+    async function(event) {
+
+        event.preventDefault();
+
+        const updatedUser = {
+            ...currentUser,
+            name: $("profileName").value,
+            department:
+                $("profileDepartment").value
+        };
+
+        currentUser = updatedUser;
+
+        localStorage.setItem(
+            "campusUser",
+            JSON.stringify(currentUser)
+        );
+
+        updateUserUI();
+
+        showToast(
+            "Profile updated successfully!"
+        );
+    }
+);
+
+/* =========================
+   ADMIN DASHBOARD
+========================= */
+
+async function loadAdminDashboard() {
+
+    if (
+        !currentUser ||
+        currentUser.role !== "admin"
+    ) {
         showToast(
             "Admin access required.",
             "error"
         );
 
+        showPage("home");
         return;
     }
 
-    const event =
-        events.find(
-            (item) => item.id === eventId
+    try {
+
+        const events =
+            await api("/events");
+
+        const users =
+            await api("/users");
+
+        const registrations =
+            await api("/registrations");
+
+        $("statEvents").textContent =
+            events.length;
+
+        $("statStudents").textContent =
+            users.filter(
+                u => u.role === "student"
+            ).length;
+
+        $("statRegistrations").textContent =
+            registrations.length;
+
+        renderAdminEvents(events);
+        renderAdminRegistrations(
+            registrations,
+            users,
+            events
         );
 
-    if (!event) {
-        return;
-    }
-
-    $("#eventId").value = event.id;
-
-    $("#eventTitle").value =
-        event.title;
-
-    $("#eventCategory").value =
-        event.category;
-
-    $("#eventDescription").value =
-        event.description;
-
-    $("#eventDate").value =
-        event.date;
-
-    $("#eventTime").value =
-        event.time;
-
-    $("#eventVenue").value =
-        event.venue;
-
-    $("#eventCapacity").value =
-        event.capacity;
-
-    $("#eventImage").value =
-        event.image || "";
-
-    $("#eventModalTitle").textContent =
-        "Edit Event";
-
-    openModal("eventModal");
-
-}
-
-/* =========================================
-   DELETE EVENT
-========================================= */
-
-function deleteEvent(eventId) {
-
-    if (!currentUser || currentUser.role !== "admin") {
-
+    } catch (error) {
         showToast(
-            "Admin access required.",
+            "Unable to load admin dashboard.",
             "error"
         );
-
-        return;
     }
-
-    const index =
-        events.findIndex(
-            (event) =>
-                event.id === eventId
-        );
-
-    if (index === -1) {
-        return;
-    }
-
-    const confirmed =
-        confirm(
-            "Are you sure you want to delete this event?"
-        );
-
-    if (!confirmed) {
-        return;
-    }
-
-    events.splice(index, 1);
-
-    registrations =
-        registrations.filter(
-            (registration) =>
-                registration.eventId !== eventId
-        );
-
-    saveRegistrations();
-
-    renderFeaturedEvents();
-
-    renderAllEvents();
-
-    renderAdminDashboard();
-
-    showToast(
-        "Event deleted successfully.",
-        "success"
-    );
-
 }
 
-/* =========================================
-   ADMIN REGISTRATIONS
-========================================= */
-
-function renderRegistrationsTable() {
+function renderAdminEvents(events) {
 
     const table =
-        $("#registrationsTable");
+        $("adminEventsTable");
 
-    if (!table) {
-        return;
-    }
+    if (!table) return;
 
-    if (registrations.length === 0) {
+    table.innerHTML = events.map(event => `
+        <tr>
 
-        table.innerHTML = `
-            <tr>
-                <td colspan="6">
-                    No registrations yet.
-                </td>
-            </tr>
-        `;
+            <td>
+                <strong>
+                    ${escapeHTML(event.title)}
+                </strong>
+            </td>
 
-        return;
-    }
+            <td>
+                ${escapeHTML(event.category)}
+            </td>
+
+            <td>
+                ${formatDate(event.date)}
+            </td>
+
+            <td>
+                ${event.capacity}
+            </td>
+
+            <td>
+                ${event.registered || 0}
+            </td>
+
+            <td>
+
+                <button
+                    class="btn btn-outline btn-small"
+                    onclick="editEvent(${event.id})"
+                >
+                    Edit
+                </button>
+
+                <button
+                    class="btn btn-small"
+                    onclick="deleteEvent(${event.id})"
+                >
+                    Delete
+                </button>
+
+            </td>
+
+        </tr>
+    `).join("");
+}
+
+function renderAdminRegistrations(
+    registrations,
+    users,
+    events
+) {
+
+    const table =
+        $("registrationsTable");
+
+    if (!table) return;
 
     table.innerHTML =
-        registrations.map((registration) => {
+        registrations.map(registration => {
 
             const user =
                 users.find(
-                    (item) =>
-                        item.id === registration.userId
+                    u => u.id === registration.userId
                 );
 
             const event =
                 events.find(
-                    (item) =>
-                        item.id === registration.eventId
+                    e => e.id === registration.eventId
                 );
 
-            if (!user || !event) {
-                return "";
-            }
+            if (!user || !event) return "";
 
             return `
-
                 <tr>
 
                     <td>
@@ -1486,7 +714,9 @@ function renderRegistrationsTable() {
                     </td>
 
                     <td>
-                        ${escapeHTML(user.department || "-")}
+                        ${escapeHTML(
+                            user.department || "-"
+                        )}
                     </td>
 
                     <td>
@@ -1494,598 +724,439 @@ function renderRegistrationsTable() {
                     </td>
 
                     <td>
-
                         <button
-                            class="btn btn-outline btn-small"
-                            onclick="adminCancelRegistration(${registration.id})"
+                            class="btn btn-small"
+                            onclick="cancelRegistration(${registration.id})"
                         >
                             Cancel
                         </button>
-
                     </td>
 
                 </tr>
-
             `;
-
         }).join("");
-
 }
 
-/* =========================================
-   ADMIN CANCEL REGISTRATION
-========================================= */
+/* =========================
+   ADMIN EVENT FORM
+========================= */
 
-function adminCancelRegistration(registrationId) {
+function openAddEvent() {
 
-    if (!currentUser || currentUser.role !== "admin") {
+    $("eventForm").reset();
 
-        showToast(
-            "Admin access required.",
-            "error"
-        );
+    $("eventId").value = "";
 
-        return;
-    }
+    $("eventModalTitle").textContent =
+        "Add Event";
 
-    cancelRegistration(registrationId);
-
+    openModal("eventModal");
 }
 
-/* =========================================
-   ADMIN TABS
-========================================= */
+async function editEvent(id) {
 
-function initializeAdminTabs() {
-
-    $$(".admin-tab").forEach((tab) => {
-
-        tab.addEventListener("click", () => {
-
-            $$(".admin-tab").forEach((item) => {
-                item.classList.remove("active");
-            });
-
-            tab.classList.add("active");
-
-            const selected =
-                tab.dataset.adminTab;
-
-            $("#adminEventsPanel")
-                ?.classList.toggle(
-                    "active",
-                    selected === "events"
-                );
-
-            $("#adminRegistrationsPanel")
-                ?.classList.toggle(
-                    "active",
-                    selected === "registrations"
-                );
-
-        });
-
-    });
-
-    $("#refreshAdminEvents")
-        ?.addEventListener(
-            "click",
-            renderAdminDashboard
-        );
-
-    $("#addEventBtn")
-        ?.addEventListener(
-            "click",
-            () => {
-
-                if (
-                    !currentUser ||
-                    currentUser.role !== "admin"
-                ) {
-
-                    showToast(
-                        "Admin access required.",
-                        "error"
-                    );
-
-                    return;
-                }
-
-                $("#eventForm")?.reset();
-
-                $("#eventId").value = "";
-
-                $("#eventModalTitle").textContent =
-                    "Add Event";
-
-                openModal("eventModal");
-
-            }
-        );
-
-}
-
-/* =========================================
-   REGISTRATION SEARCH
-========================================= */
-
-document.addEventListener("input", (event) => {
-
-    if (
-        event.target &&
-        event.target.id === "registrationSearch"
-    ) {
-
-        filterRegistrations(
-            event.target.value
-        );
-
-    }
-
-});
-
-function filterRegistrations(value) {
-
-    const search =
-        value.toLowerCase().trim();
-
-    $$("#registrationsTable tr")
-        .forEach((row) => {
-
-            row.style.display =
-                row.textContent
-                    .toLowerCase()
-                    .includes(search)
-                    ? ""
-                    : "none";
-
-        });
-
-}
-
-/* =========================================
-   EXPORT CSV
-========================================= */
-
-$("#exportCsvBtn")
-    ?.addEventListener(
-        "click",
-        exportRegistrationsCSV
-    );
-
-function exportRegistrationsCSV() {
-
-    if (!currentUser || currentUser.role !== "admin") {
-
-        showToast(
-            "Admin access required.",
-            "error"
-        );
-
-        return;
-    }
-
-    if (registrations.length === 0) {
-
-        showToast(
-            "No registrations to export.",
-            "error"
-        );
-
-        return;
-    }
-
-    const rows = [
-
-        [
-            "Student",
-            "Email",
-            "Event",
-            "Department",
-            "Status"
-        ]
-
-    ];
-
-    registrations.forEach((registration) => {
-
-        const user =
-            users.find(
-                (item) =>
-                    item.id === registration.userId
-            );
+    try {
 
         const event =
-            events.find(
-                (item) =>
-                    item.id === registration.eventId
-            );
+            await api(`/events/${id}`);
 
-        if (user && event) {
+        $("eventId").value =
+            event.id;
 
-            rows.push([
+        $("eventTitle").value =
+            event.title;
 
-                user.name,
+        $("eventCategory").value =
+            event.category;
 
-                user.email,
+        $("eventDescription").value =
+            event.description || "";
 
-                event.title,
+        $("eventDate").value =
+            event.date;
 
-                user.department || "",
+        $("eventTime").value =
+            event.time;
 
-                registration.status
+        $("eventVenue").value =
+            event.venue;
 
-            ]);
+        $("eventCapacity").value =
+            event.capacity;
 
-        }
+        $("eventModalTitle").textContent =
+            "Edit Event";
 
-    });
+        openModal("eventModal");
 
-    const csv =
-        rows
-            .map(
-                (row) =>
-                    row
-                        .map(csvEscape)
-                        .join(",")
-            )
-            .join("\n");
-
-    const blob =
-        new Blob(
-            [csv],
-            {
-                type: "text/csv;charset=utf-8;"
-            }
+    } catch (error) {
+        showToast(
+            error.message,
+            "error"
         );
-
-    const url =
-        URL.createObjectURL(blob);
-
-    const link =
-        document.createElement("a");
-
-    link.href = url;
-
-    link.download =
-        "campusconnect-registrations.csv";
-
-    document.body.appendChild(link);
-
-    link.click();
-
-    link.remove();
-
-    URL.revokeObjectURL(url);
-
-    showToast(
-        "CSV exported successfully!",
-        "success"
-    );
-
+    }
 }
 
-function csvEscape(value) {
+async function saveEvent(event) {
 
-    const stringValue =
-        String(value ?? "");
+    event.preventDefault();
 
-    if (
-        stringValue.includes(",") ||
-        stringValue.includes('"') ||
-        stringValue.includes("\n")
-    ) {
+    const id =
+        $("eventId").value;
 
-        return `"${stringValue.replace(
-            /"/g,
-            '""'
-        )}"`;
+    const eventData = {
+        title: $("eventTitle").value,
+        category: $("eventCategory").value,
+        description: $("eventDescription").value,
+        date: $("eventDate").value,
+        time: $("eventTime").value,
+        venue: $("eventVenue").value,
+        capacity: Number(
+            $("eventCapacity").value
+        )
+    };
 
+    try {
+
+        if (id) {
+
+            await api(`/events/${id}`, {
+                method: "PUT",
+                body: JSON.stringify(
+                    eventData
+                )
+            });
+
+            showToast(
+                "Event updated successfully!"
+            );
+
+        } else {
+
+            await api("/events", {
+                method: "POST",
+                body: JSON.stringify(
+                    eventData
+                )
+            });
+
+            showToast(
+                "Event created successfully!"
+            );
+        }
+
+        closeAllModals();
+
+        await loadEvents();
+        await loadAdminDashboard();
+
+    } catch (error) {
+
+        showToast(
+            error.message,
+            "error"
+        );
+    }
+}
+
+async function deleteEvent(id) {
+
+    if (!confirm(
+        "Delete this event?"
+    )) {
+        return;
     }
 
-    return stringValue;
+    try {
 
+        await api(`/events/${id}`, {
+            method: "DELETE"
+        });
+
+        showToast(
+            "Event deleted."
+        );
+
+        await loadEvents();
+        await loadAdminDashboard();
+
+    } catch (error) {
+
+        showToast(
+            error.message,
+            "error"
+        );
+    }
 }
 
-/* =========================================
+/* =========================
    MODALS
-========================================= */
-
-function initializeModals() {
-
-    $$("[data-close-modal]")
-        .forEach((button) => {
-
-            button.addEventListener(
-                "click",
-                closeAllModals
-            );
-
-        });
-
-    $$(".modal-overlay")
-        .forEach((overlay) => {
-
-            overlay.addEventListener(
-                "click",
-                closeAllModals
-            );
-
-        });
-
-    $("#switchToRegister")
-        ?.addEventListener(
-            "click",
-            () => {
-
-                closeModal("loginModal");
-
-                openModal("registerModal");
-
-            }
-        );
-
-    $("#switchToLogin")
-        ?.addEventListener(
-            "click",
-            () => {
-
-                closeModal("registerModal");
-
-                openModal("loginModal");
-
-            }
-        );
-
-    document.addEventListener(
-        "keydown",
-        (event) => {
-
-            if (event.key === "Escape") {
-
-                closeAllModals();
-
-            }
-
-        }
-    );
-
-}
+========================= */
 
 function openModal(id) {
 
-    const modal = $(`#${id}`);
+    const modal = $(id);
 
-    if (!modal) {
-        return;
-    }
+    if (!modal) return;
 
-    modal.classList.add("active");
-
+    modal.classList.add("show");
     modal.setAttribute(
         "aria-hidden",
         "false"
     );
-
-    document.body.style.overflow =
-        "hidden";
-
-}
-
-function closeModal(id) {
-
-    const modal = $(`#${id}`);
-
-    if (!modal) {
-        return;
-    }
-
-    modal.classList.remove("active");
-
-    modal.setAttribute(
-        "aria-hidden",
-        "true"
-    );
-
-    document.body.style.overflow =
-        "";
-
 }
 
 function closeAllModals() {
 
-    $$(".modal").forEach((modal) => {
+    document
+        .querySelectorAll(".modal")
+        .forEach(modal => {
 
-        modal.classList.remove("active");
+            modal.classList.remove("show");
 
-        modal.setAttribute(
-            "aria-hidden",
-            "true"
+            modal.setAttribute(
+                "aria-hidden",
+                "true"
+            );
+        });
+}
+
+/* =========================
+   LOGOUT
+========================= */
+
+function logout() {
+
+    currentUser = null;
+
+    localStorage.removeItem(
+        "campusUser"
+    );
+
+    updateUserUI();
+
+    showPage("home");
+
+    showToast(
+        "Logged out successfully."
+    );
+}
+
+/* =========================
+   EVENT LISTENERS
+========================= */
+
+document.addEventListener(
+    "click",
+    function(event) {
+
+        const pageButton =
+            event.target.closest(
+                "[data-page]"
+            );
+
+        if (pageButton) {
+
+            const page =
+                pageButton.dataset.page;
+
+            showPage(page);
+        }
+    }
+);
+
+$("loginNavBtn")?.addEventListener(
+    "click",
+    () => openModal("loginModal")
+);
+
+$("registerNavBtn")?.addEventListener(
+    "click",
+    () => openModal("registerModal")
+);
+
+$("heroRegisterBtn")?.addEventListener(
+    "click",
+    () => openModal("registerModal")
+);
+
+$("footerLogin")?.addEventListener(
+    "click",
+    () => openModal("loginModal")
+);
+
+$("footerRegister")?.addEventListener(
+    "click",
+    () => openModal("registerModal")
+);
+
+$("logoutBtn")?.addEventListener(
+    "click",
+    logout
+);
+
+$("switchToRegister")?.addEventListener(
+    "click",
+    () => {
+        closeAllModals();
+        openModal("registerModal");
+    }
+);
+
+$("switchToLogin")?.addEventListener(
+    "click",
+    () => {
+        closeAllModals();
+        openModal("loginModal");
+    }
+);
+
+document
+    .querySelectorAll("[data-close-modal]")
+    .forEach(button => {
+        button.addEventListener(
+            "click",
+            closeAllModals
         );
-
     });
 
-    document.body.style.overflow =
-        "";
+document
+    .querySelectorAll(".modal-overlay")
+    .forEach(overlay => {
+        overlay.addEventListener(
+            "click",
+            closeAllModals
+        );
+    });
 
-}
+$("loginForm")?.addEventListener(
+    "submit",
+    function(event) {
 
-/* =========================================
-   TOAST
-========================================= */
+        event.preventDefault();
 
-let toastTimer;
-
-function showToast(message, type = "success") {
-
-    const toast = $("#toast");
-
-    const toastMessage =
-        $("#toastMessage");
-
-    const toastIcon =
-        $("#toastIcon");
-
-    if (!toast) {
-        return;
+        login(
+            $("loginEmail").value,
+            $("loginPassword").value
+        );
     }
+);
 
-    toastMessage.textContent =
-        message;
+$("registerForm")?.addEventListener(
+    "submit",
+    function(event) {
 
-    toastIcon.textContent =
-        type === "error"
-            ? "!"
-            : "✓";
+        event.preventDefault();
 
-    toast.classList.add("show");
-
-    clearTimeout(toastTimer);
-
-    toastTimer = setTimeout(() => {
-
-        toast.classList.remove("show");
-
-    }, 3000);
-
-}
-
-/* =========================================
-   DATE / TIME
-========================================= */
-
-function formatDate(dateString) {
-
-    if (!dateString) {
-        return "-";
+        registerAccount({
+            name: $("registerName").value,
+            email: $("registerEmail").value,
+            department:
+                $("registerDepartment").value,
+            password:
+                $("registerPassword").value
+        });
     }
+);
 
-    const date =
-        new Date(`${dateString}T00:00:00`);
+$("eventForm")?.addEventListener(
+    "submit",
+    saveEvent
+);
 
-    return date.toLocaleDateString(
-        "en-IN",
-        {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-        }
-    );
+$("addEventBtn")?.addEventListener(
+    "click",
+    openAddEvent
+);
 
-}
+$("eventSearch")?.addEventListener(
+    "input",
+    filterEvents
+);
 
-function formatTime(timeString) {
+$("categoryFilter")?.addEventListener(
+    "change",
+    filterEvents
+);
 
-    if (!timeString) {
-        return "-";
-    }
+$("refreshAdminEvents")?.addEventListener(
+    "click",
+    loadAdminDashboard
+);
 
-    const [hours, minutes] =
-        timeString.split(":");
+/* =========================
+   ADMIN TABS
+========================= */
 
-    const date =
-        new Date();
+document
+    .querySelectorAll(".admin-tab")
+    .forEach(tab => {
 
-    date.setHours(
-        Number(hours),
-        Number(minutes)
-    );
+        tab.addEventListener(
+            "click",
+            function() {
 
-    return date.toLocaleTimeString(
-        "en-IN",
-        {
-            hour: "numeric",
-            minute: "2-digit"
-        }
-    );
+                document
+                    .querySelectorAll(".admin-tab")
+                    .forEach(t =>
+                        t.classList.remove("active")
+                    );
 
-}
+                document
+                    .querySelectorAll(".admin-panel")
+                    .forEach(panel =>
+                        panel.classList.remove("active")
+                    );
 
-/* =========================================
-   LOCAL STORAGE
-========================================= */
+                this.classList.add("active");
 
-function saveRegistrations() {
+                const tabName =
+                    this.dataset.adminTab;
 
-    localStorage.setItem(
-        "campusconnect_registrations",
-        JSON.stringify(registrations)
-    );
+                if (tabName === "events") {
+                    $("adminEventsPanel")
+                        ?.classList.add("active");
+                }
 
-}
-
-/* =========================================
-   HERO EVENT COUNT
-========================================= */
-
-function updateHeroEventCount() {
-
-    const count =
-        $("#heroEventCount");
-
-    if (count) {
-
-        count.textContent =
-            events.length;
-
-    }
-
-}
-
-/* =========================================
-   SECURITY HELPER
-========================================= */
-
-function escapeHTML(value) {
-
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-
-}
-
-/* =========================================
-   MOBILE MENU
-========================================= */
-
-$("#mobileMenuBtn")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            const nav =
-                $(".nav-links");
-
-            const actions =
-                $(".nav-actions");
-
-            if (!nav || !actions) {
-                return;
+                if (
+                    tabName === "registrations"
+                ) {
+                    $("adminRegistrationsPanel")
+                        ?.classList.add("active");
+                }
             }
+        );
+    });
 
-            const visible =
-                nav.style.display === "flex";
+/* =========================
+   MOBILE MENU
+========================= */
 
-            nav.style.display =
-                visible ? "" : "flex";
+$("mobileMenuBtn")?.addEventListener(
+    "click",
+    function() {
 
-            actions.style.display =
-                visible ? "" : "flex";
-
-        }
-    );
-
-/* =========================================
-   ADMIN DEMO INFORMATION
-========================================= */
-
-console.log(
-    "CampusConnect loaded successfully."
+        document
+            .querySelector(".nav-links")
+            ?.classList.toggle("mobile-open");
+    }
 );
 
-console.log(
-    "Demo Admin Login: admin@campusconnect.com / admin123"
-);
+/* =========================
+   INITIALIZE
+========================= */
+
+async function init() {
+
+    updateUserUI();
+
+    await loadEvents();
+
+    if (currentUser) {
+        console.log(
+            `Logged in as ${currentUser.name}`
+        );
+    }
+}
+
+init();
