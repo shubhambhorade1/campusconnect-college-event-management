@@ -11,7 +11,7 @@ CampusConnect is a college event management platform that helps students discove
 
 ## 🌐 Live Website
 
-👉 https://YOUR-GITHUB-USERNAME.github.io/YOUR-REPOSITORY-NAME/
+👉 https://campusconnect-college-event-management-t4mp.onrender.com/
 
 ## 🚀 Backend API
 
