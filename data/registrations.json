@@ -1,0 +1,9 @@
+[
+  {
+    "id": 1,
+    "userId": 2,
+    "eventId": 1,
+    "status": "registered",
+    "registeredAt": "2026-08-12T10:00:00.000Z"
+  }
+]
