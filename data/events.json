@@ -1,0 +1,46 @@
+[
+  {
+    "id": 1,
+    "title": "CodeFest 2026",
+    "category": "Technical",
+    "description": "A coding competition for students to test their programming skills.",
+    "date": "2026-08-25",
+    "time": "10:00",
+    "venue": "Computer Lab",
+    "capacity": 100,
+    "registered": 42
+  },
+  {
+    "id": 2,
+    "title": "Annual Cultural Fest",
+    "category": "Cultural",
+    "description": "Music, dance, drama and exciting cultural performances.",
+    "date": "2026-08-30",
+    "time": "16:00",
+    "venue": "Main Auditorium",
+    "capacity": 500,
+    "registered": 320
+  },
+  {
+    "id": 3,
+    "title": "Web Development Workshop",
+    "category": "Workshop",
+    "description": "Learn modern web development with HTML, CSS and JavaScript.",
+    "date": "2026-09-05",
+    "time": "11:00",
+    "venue": "Seminar Hall",
+    "capacity": 80,
+    "registered": 55
+  },
+  {
+    "id": 4,
+    "title": "Inter College Cricket",
+    "category": "Sports",
+    "description": "An exciting cricket tournament between college teams.",
+    "date": "2026-09-10",
+    "time": "09:00",
+    "venue": "College Ground",
+    "capacity": 200,
+    "registered": 150
+  }
+]
